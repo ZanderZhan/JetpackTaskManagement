@@ -1,19 +1,20 @@
 package com.example.jetpacktaskmanagement.viewmodel
 
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.jetpacktaskmanagement.model.Task
 import java.util.Date
 
-class TaskListViewModel: ViewModel() {
+class TaskListViewModel : ViewModel() {
     private fun getRandomDate(): Date {
         val tenDaysInMs = 10L * 24 * 60 * 60 * 1000
         val randomOffset = (0..tenDaysInMs).random()
         return Date(System.currentTimeMillis() - randomOffset)
     }
 
-    private val _tasks = MutableLiveData<List<Task>>(
+    private val _localTasks = MutableLiveData<List<Task>>(
         listOf(
             Task(false, "Buy groceries", getRandomDate()),
             Task(true, "Finish project proposal", getRandomDate()),
@@ -27,9 +28,27 @@ class TaskListViewModel: ViewModel() {
             Task(false, "Organize workspace", getRandomDate())
         )
     )
-    
-    val tasks: LiveData<List<Task>>
-        get() = _tasks
+
+    private val _networkTasks = MutableLiveData<List<Task>>(
+        listOf(
+            Task(false, "Buy groceries", getRandomDate()),
+            Task(true, "Finish project proposal", getRandomDate()),
+        )
+    )
+
+    private val _tasks = MediatorLiveData<List<Task>>()
+
+
+    val tasks: LiveData<List<Task>> = _tasks
+
+    init {
+        _tasks.addSource(_localTasks) { local ->
+            _tasks.value = local.orEmpty() + _networkTasks.value.orEmpty()
+        }
+        _tasks.addSource(_networkTasks) { network ->
+            _tasks.value = _localTasks.value.orEmpty() + network.orEmpty()
+        }
+    }
 
     fun addTask(description: String) {
         val currentTasks = _tasks.value.orEmpty().toMutableList()
