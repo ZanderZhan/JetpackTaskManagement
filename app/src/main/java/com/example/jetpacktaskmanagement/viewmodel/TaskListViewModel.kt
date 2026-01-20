@@ -14,7 +14,9 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.jetpacktaskmanagement.model.Task
 import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.repository.TaskListRepository
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.util.Date
 
@@ -45,6 +47,10 @@ class TaskListViewModel(
         return@switchMap MutableLiveData(currentTasks)
     }
 
+    private val _showSnacked = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
+    val showSnacked: SharedFlow<Boolean> = _showSnacked
+
+
     init {
         _tasks.addSource(_localTasks) { local ->
             _uiState.value = UIState.Success
@@ -65,6 +71,7 @@ class TaskListViewModel(
         }
         if (currentTasks.isEmpty()) {
             _uiState.value = UIState.Error
+            _showSnacked.tryEmit(true)
         } else {
             _uiState.value = UIState.Success
         }

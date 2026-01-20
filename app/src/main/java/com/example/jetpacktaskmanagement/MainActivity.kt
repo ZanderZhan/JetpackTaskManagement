@@ -1,14 +1,18 @@
 package com.example.jetpacktaskmanagement
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.lifecycle.HasDefaultViewModelProviderFactory
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.MutableCreationExtras
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
@@ -21,36 +25,41 @@ import com.example.jetpacktaskmanagement.screen.TaskList
 import com.example.jetpacktaskmanagement.screen.TaskListScreen
 import com.example.jetpacktaskmanagement.ui.theme.JetpackTaskManagementTheme
 import com.example.jetpacktaskmanagement.viewmodel.TaskListViewModel
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         setContent {
             JetpackTaskManagementTheme {
-                JetpackTaskManagementApp()
+                val viewModelStoreOwner: ViewModelStoreOwner = checkNotNull(LocalViewModelStoreOwner.current)
+                val viewModel: TaskListViewModel = viewModel(
+                    factory = TaskListViewModel.provideFactory(),
+                    extras = MutableCreationExtras(if(viewModelStoreOwner is HasDefaultViewModelProviderFactory) {
+                        viewModelStoreOwner.defaultViewModelCreationExtras
+                    } else {
+                        CreationExtras.Empty
+                    }).apply {
+                        this[TaskListViewModel.REPOSITORY_KEY] = TaskListViewModel.taskListRepository
+                    }
+                )
+
+                LaunchedEffect(viewModel.showSnacked) {
+                    viewModel.showSnacked.collect {
+                        Toast.makeText(this@MainActivity, "nothing found", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                JetpackTaskManagementApp(viewModel)
             }
         }
     }
 }
 
 @Composable
-fun JetpackTaskManagementApp(
-    viewModelStoreOwner: ViewModelStoreOwner = checkNotNull(LocalViewModelStoreOwner.current)
-) {
+fun JetpackTaskManagementApp(viewModel: TaskListViewModel) {
     val backStack = remember { mutableStateListOf<Any>(TaskList) }
-    val viewModel: TaskListViewModel = viewModel(
-        factory = TaskListViewModel.provideFactory(),
-        extras = MutableCreationExtras(if(viewModelStoreOwner is HasDefaultViewModelProviderFactory) {
-            viewModelStoreOwner.defaultViewModelCreationExtras
-        } else {
-            CreationExtras.Empty
-        }).apply {
-            this[TaskListViewModel.REPOSITORY_KEY] = TaskListViewModel.taskListRepository
-        }
-    )
-
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
