@@ -2,6 +2,7 @@ package com.example.jetpacktaskmanagement.screen
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,8 +32,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import com.example.jetpacktaskmanagement.model.Task
+import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.viewmodel.TaskListViewModel
 import kotlinx.serialization.Serializable
 
@@ -44,6 +48,7 @@ fun TaskListScreen(
     onAddTask: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val tasks by viewModel.tasks.observeAsState(emptyList())
     var taskToDelete by remember { mutableStateOf<Task?>(null) }
     var searchQuery by remember { mutableStateOf("") }
@@ -67,21 +72,38 @@ fun TaskListScreen(
                     viewModel.search(searchQuery)
                 },
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 placeholder = { Text("Search tasks...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true
             )
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-            ) {
-                items(tasks) { task ->
-                    TaskItem(
-                        task = task,
-                        onToggle = { viewModel.toggleTask(task) },
-                        onDelete = { taskToDelete = task }
-                    )
+            
+            Box(modifier = Modifier.fillMaxSize()) {
+                when (uiState) {
+                    UIState.Loading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                    UIState.Success -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(tasks) { task ->
+                                TaskItem(
+                                    task = task,
+                                    onToggle = { viewModel.toggleTask(task) },
+                                    onDelete = { taskToDelete = task }
+                                )
+                            }
+                        }
+                    }
+                    UIState.Error -> {
+                        Text(
+                            text = "No related task found. Please try again.",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
                 }
             }
         }

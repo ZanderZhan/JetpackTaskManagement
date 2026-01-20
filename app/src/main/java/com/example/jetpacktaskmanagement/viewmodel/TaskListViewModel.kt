@@ -10,7 +10,10 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.jetpacktaskmanagement.model.Task
+import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.repository.TaskListRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import java.util.Date
 
 class TaskListViewModel(private val repository: TaskListRepository) : ViewModel() {
@@ -27,10 +30,19 @@ class TaskListViewModel(private val repository: TaskListRepository) : ViewModel(
 
     private val _tasks = MediatorLiveData<List<Task>>()
 
+    private val _uiState = MutableStateFlow<UIState>(UIState.Loading)
+    val uiState: StateFlow<UIState> = _uiState
+
+
     val tasks: LiveData<List<Task>> = _queryString.switchMap { query ->
         if (query.isEmpty()) return@switchMap _tasks
         val currentTasks = _tasks.value.orEmpty().filter {
             it.description.contains(query, ignoreCase = true)
+        }
+        if (currentTasks.isEmpty()) {
+            _uiState.value = UIState.Error
+        } else {
+            _uiState.value = UIState.Success
         }
         return@switchMap MutableLiveData(currentTasks)
     }
@@ -38,9 +50,11 @@ class TaskListViewModel(private val repository: TaskListRepository) : ViewModel(
 
     init {
         _tasks.addSource(_localTasks) { local ->
+            _uiState.value = UIState.Success
             _tasks.value = local.orEmpty() + _networkTasks.value.orEmpty()
         }
         _tasks.addSource(_networkTasks) { network ->
+            _uiState.value = UIState.Success
             _tasks.value = _localTasks.value.orEmpty() + network.orEmpty()
         }
     }
