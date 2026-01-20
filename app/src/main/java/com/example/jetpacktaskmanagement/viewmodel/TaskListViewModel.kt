@@ -3,8 +3,10 @@ package com.example.jetpacktaskmanagement.viewmodel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
@@ -16,26 +18,48 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.util.Date
 
-class TaskListViewModel(private val repository: TaskListRepository) : ViewModel() {
+class TaskListViewModel(
+    private val savedStateHandle: SavedStateHandle, private val repository: TaskListRepository
+) : ViewModel() {
 
-    private val _localTasks = MutableLiveData<List<Task>>(
-        repository.getLocalTasks()
-    )
+    private val _localTasks = MutableLiveData<List<Task>>(repository.getLocalTasks())
 
-    private val _networkTasks = MutableLiveData<List<Task>>(
-        repository.getNetworkTasks()
-    )
+    private val _networkTasks = MutableLiveData<List<Task>>(repository.getNetworkTasks())
 
-    private val _queryString = MutableLiveData("")
+    private val _queryString = MutableLiveData(savedStateHandle["query"] ?: "")
+    val queryString: LiveData<String> = _queryString
 
     private val _tasks = MediatorLiveData<List<Task>>()
 
     private val _uiState = MutableStateFlow<UIState>(UIState.Loading)
     val uiState: StateFlow<UIState> = _uiState
 
-
+    // switchMap will trigger a problem:
+    // _tasks may not be attached to UI at first, so it may not initialise through
+    // addSource onChange.
+    // this will lead to: if _queryString is not empty at start, the screen may
+    // produce an Error uiState.
     val tasks: LiveData<List<Task>> = _queryString.switchMap { query ->
         if (query.isEmpty()) return@switchMap _tasks
+        val currentTasks = _search(query)
+        return@switchMap MutableLiveData(currentTasks)
+    }
+
+    init {
+        _tasks.addSource(_localTasks) { local ->
+            _uiState.value = UIState.Success
+            _tasks.value = local.orEmpty() + _networkTasks.value.orEmpty()
+            _search(_queryString.value.orEmpty())
+        }
+        _tasks.addSource(_networkTasks) { network ->
+            _uiState.value = UIState.Success
+            _tasks.value = _localTasks.value.orEmpty() + network.orEmpty()
+            _search(_queryString.value.orEmpty())
+        }
+    }
+
+    private fun _search(query: String): List<Task> {
+        val query = _queryString.value.orEmpty()
         val currentTasks = _tasks.value.orEmpty().filter {
             it.description.contains(query, ignoreCase = true)
         }
@@ -44,19 +68,7 @@ class TaskListViewModel(private val repository: TaskListRepository) : ViewModel(
         } else {
             _uiState.value = UIState.Success
         }
-        return@switchMap MutableLiveData(currentTasks)
-    }
-
-
-    init {
-        _tasks.addSource(_localTasks) { local ->
-            _uiState.value = UIState.Success
-            _tasks.value = local.orEmpty() + _networkTasks.value.orEmpty()
-        }
-        _tasks.addSource(_networkTasks) { network ->
-            _uiState.value = UIState.Success
-            _tasks.value = _localTasks.value.orEmpty() + network.orEmpty()
-        }
+        return currentTasks
     }
 
     fun addTask(description: String) {
@@ -79,10 +91,12 @@ class TaskListViewModel(private val repository: TaskListRepository) : ViewModel(
     }
 
     fun search(query: String) {
+        savedStateHandle["query"] = query
         _queryString.value = query
     }
 
     fun clearSearch(query: String) {
+        savedStateHandle["query"] = ""
         _queryString.value = ""
     }
 
@@ -96,8 +110,10 @@ class TaskListViewModel(private val repository: TaskListRepository) : ViewModel(
                 initializer {
 //                    val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]
                     this.get(REPOSITORY_KEY)
-                    val repository = this[REPOSITORY_KEY] ?: throw IllegalArgumentException("Repository not provided in extras")
-                    TaskListViewModel(repository)
+                    val repository = this[REPOSITORY_KEY]
+                        ?: throw IllegalArgumentException("Repository not provided in extras")
+                    val savedStateHandle = createSavedStateHandle()
+                    TaskListViewModel(savedStateHandle, repository)
                 }
             }
         }

@@ -51,7 +51,8 @@ fun TaskListScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val tasks by viewModel.tasks.observeAsState(emptyList())
     var taskToDelete by remember { mutableStateOf<Task?>(null) }
-    var searchQuery by remember { mutableStateOf("") }
+    val searchQuery by viewModel.queryString.observeAsState("")
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         floatingActionButton = {
@@ -68,8 +69,7 @@ fun TaskListScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = {
-                    searchQuery = it
-                    viewModel.search(searchQuery)
+                    viewModel.search(it)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
