@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.switchMap
 import com.example.jetpacktaskmanagement.model.Task
 import java.util.Date
 
@@ -36,10 +37,18 @@ class TaskListViewModel : ViewModel() {
         )
     )
 
+    private val _queryString = MutableLiveData("")
+
     private val _tasks = MediatorLiveData<List<Task>>()
 
+    val tasks: LiveData<List<Task>> = _queryString.switchMap { query ->
+        if (query.isEmpty()) return@switchMap  _tasks
+        val currentTasks = _tasks.value.orEmpty().filter {
+            it.description.contains(query, ignoreCase = true)
+        }
+        return@switchMap MutableLiveData(currentTasks)
+    }
 
-    val tasks: LiveData<List<Task>> = _tasks
 
     init {
         _tasks.addSource(_localTasks) { local ->
@@ -67,5 +76,12 @@ class TaskListViewModel : ViewModel() {
             if (it == task) it.copy(checked = !it.checked) else it
         }
         _tasks.value = currentTasks
+    }
+
+    fun search(query: String) {
+        _queryString.value = query
+    }
+    fun clearSearch(query: String) {
+        _queryString.value = ""
     }
 }

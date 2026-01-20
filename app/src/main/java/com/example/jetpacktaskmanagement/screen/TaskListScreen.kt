@@ -11,11 +11,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,7 +46,7 @@ fun TaskListScreen(
 ) {
     val tasks by viewModel.tasks.observeAsState(emptyList())
     var taskToDelete by remember { mutableStateOf<Task?>(null) }
-
+    var searchQuery by remember { mutableStateOf("") }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         floatingActionButton = {
@@ -53,17 +55,34 @@ fun TaskListScreen(
             }
         }
     ) { innerPadding ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .padding(innerPadding)
-                .fillMaxSize()
+                .fillMaxWidth()
         ) {
-            items(tasks) { task ->
-                TaskItem(
-                    task = task,
-                    onToggle = { viewModel.toggleTask(task) },
-                    onDelete = { taskToDelete = task }
-                )
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = {
+                    searchQuery = it
+                    viewModel.search(searchQuery)
+                },
+                modifier = Modifier
+                    .fillMaxWidth(),
+                placeholder = { Text("Search tasks...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                singleLine = true
+            )
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                items(tasks) { task ->
+                    TaskItem(
+                        task = task,
+                        onToggle = { viewModel.toggleTask(task) },
+                        onDelete = { taskToDelete = task }
+                    )
+                }
             }
         }
 
