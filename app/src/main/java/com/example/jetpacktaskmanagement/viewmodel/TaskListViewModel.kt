@@ -4,37 +4,23 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.switchMap
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.jetpacktaskmanagement.model.Task
+import com.example.jetpacktaskmanagement.repository.TaskListRepository
 import java.util.Date
 
-class TaskListViewModel : ViewModel() {
-    private fun getRandomDate(): Date {
-        val tenDaysInMs = 10L * 24 * 60 * 60 * 1000
-        val randomOffset = (0..tenDaysInMs).random()
-        return Date(System.currentTimeMillis() - randomOffset)
-    }
+class TaskListViewModel(private val repository: TaskListRepository) : ViewModel() {
 
     private val _localTasks = MutableLiveData<List<Task>>(
-        listOf(
-            Task(false, "Buy groceries", getRandomDate()),
-            Task(true, "Finish project proposal", getRandomDate()),
-            Task(false, "Call mom", getRandomDate()),
-            Task(false, "Go for a run", getRandomDate()),
-            Task(true, "Read a book", getRandomDate()),
-            Task(false, "Water the plants", getRandomDate()),
-            Task(false, "Clean the kitchen", getRandomDate()),
-            Task(true, "Pay bills", getRandomDate()),
-            Task(false, "Schedule dentist appointment", getRandomDate()),
-            Task(false, "Organize workspace", getRandomDate())
-        )
+        repository.getLocalTasks()
     )
 
     private val _networkTasks = MutableLiveData<List<Task>>(
-        listOf(
-            Task(false, "Buy groceries", getRandomDate()),
-            Task(true, "Finish project proposal", getRandomDate()),
-        )
+        repository.getNetworkTasks()
     )
 
     private val _queryString = MutableLiveData("")
@@ -42,7 +28,7 @@ class TaskListViewModel : ViewModel() {
     private val _tasks = MediatorLiveData<List<Task>>()
 
     val tasks: LiveData<List<Task>> = _queryString.switchMap { query ->
-        if (query.isEmpty()) return@switchMap  _tasks
+        if (query.isEmpty()) return@switchMap _tasks
         val currentTasks = _tasks.value.orEmpty().filter {
             it.description.contains(query, ignoreCase = true)
         }
@@ -81,7 +67,25 @@ class TaskListViewModel : ViewModel() {
     fun search(query: String) {
         _queryString.value = query
     }
+
     fun clearSearch(query: String) {
         _queryString.value = ""
+    }
+
+    companion object {
+        val REPOSITORY_KEY = object : CreationExtras.Key<TaskListRepository> {}
+
+        val taskListRepository = TaskListRepository()
+
+        fun provideFactory(): ViewModelProvider.Factory {
+            return viewModelFactory {
+                initializer {
+//                    val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]
+                    this.get(REPOSITORY_KEY)
+                    val repository = this[REPOSITORY_KEY] ?: throw IllegalArgumentException("Repository not provided in extras")
+                    TaskListViewModel(repository)
+                }
+            }
+        }
     }
 }

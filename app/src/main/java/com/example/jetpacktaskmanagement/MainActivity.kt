@@ -7,6 +7,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.lifecycle.HasDefaultViewModelProviderFactory
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.MutableCreationExtras
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
@@ -21,6 +26,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
             JetpackTaskManagementTheme {
                 JetpackTaskManagementApp()
@@ -30,9 +36,20 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun JetpackTaskManagementApp() {
+fun JetpackTaskManagementApp(
+    viewModelStoreOwner: ViewModelStoreOwner = checkNotNull(LocalViewModelStoreOwner.current)
+) {
     val backStack = remember { mutableStateListOf<Any>(TaskList) }
-    val viewModel: TaskListViewModel = viewModel()
+    val viewModel: TaskListViewModel = viewModel(
+        factory = TaskListViewModel.provideFactory(),
+        extras = MutableCreationExtras(if(viewModelStoreOwner is HasDefaultViewModelProviderFactory) {
+            viewModelStoreOwner.defaultViewModelCreationExtras
+        } else {
+            CreationExtras.Empty
+        }).apply {
+            this[TaskListViewModel.REPOSITORY_KEY] = TaskListViewModel.taskListRepository
+        }
+    )
 
     NavDisplay(
         backStack = backStack,
