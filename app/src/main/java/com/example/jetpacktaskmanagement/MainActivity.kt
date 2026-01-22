@@ -8,11 +8,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.HasDefaultViewModelProviderFactory
 import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.MutableCreationExtras
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
@@ -25,7 +23,6 @@ import com.example.jetpacktaskmanagement.screen.TaskList
 import com.example.jetpacktaskmanagement.screen.TaskListScreen
 import com.example.jetpacktaskmanagement.ui.theme.JetpackTaskManagementTheme
 import com.example.jetpacktaskmanagement.viewmodel.TaskListViewModel
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,7 +56,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun JetpackTaskManagementApp(viewModel: TaskListViewModel) {
-    val backStack = remember { mutableStateListOf<Any>(TaskList) }
+    // todo : rememberSaveable doesn't survive after system-initiated process death?
+    // why? https://www.revenuecat.com/blog/engineering/remember-vs-remembersaveable/
+    val backStack = rememberSaveable { mutableStateListOf<Any>(TaskList) }
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
