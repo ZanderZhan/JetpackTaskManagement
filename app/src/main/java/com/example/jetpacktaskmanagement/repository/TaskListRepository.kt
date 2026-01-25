@@ -1,15 +1,14 @@
 package com.example.jetpacktaskmanagement.repository
 
-import com.example.jetpacktaskmanagement.dao.TaskDao
 import com.example.jetpacktaskmanagement.entity.Task
-import java.sql.Date
+import java.util.Date
 
 class TaskListRepository() {
 
     private fun getRandomDate(): String {
         val tenDaysInMs = 10L * 24 * 60 * 60 * 1000
         val randomOffset = (0..tenDaysInMs).random()
-        return Date(System.currentTimeMillis() - randomOffset).toString()
+        return java.sql.Date(System.currentTimeMillis() - randomOffset).toString()
     }
 
 

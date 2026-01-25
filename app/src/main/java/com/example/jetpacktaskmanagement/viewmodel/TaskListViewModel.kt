@@ -71,7 +71,6 @@ class TaskListViewModel(
     }
 
     private fun _search(query: String): List<Task> {
-        val query = _queryString.value.orEmpty()
         val currentTasks = _tasks.value.orEmpty().filter {
             it.description.contains(query, ignoreCase = true)
         }
@@ -98,10 +97,10 @@ class TaskListViewModel(
     }
 
     fun toggleTask(task: Task) {
-        val currentTasks = _tasks.value.orEmpty().map {
-            if (it == task) it.copy(checked = !it.checked) else it
+        viewModelScope.launch {
+            val updatedTask = task.copy(checked = !task.checked)
+            taskDao.saveTasks(listOf(updatedTask))
         }
-        _tasks.value = currentTasks
     }
 
     fun search(query: String) {
