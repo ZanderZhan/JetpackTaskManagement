@@ -98,10 +98,15 @@ class TaskListViewModel(
     }
 
     fun toggleTask(task: Task) {
-        val currentTasks = _tasks.value.orEmpty().map {
-            if (it == task) it.copy(checked = !it.checked) else it
+        val updatedTask = task.copy(checked = !task.checked)
+        val networkTasks = _networkTasks.value.orEmpty()
+        if (networkTasks.any { it == task }) {
+            _networkTasks.value = networkTasks.map { if (it == task) updatedTask else it }
+            return
         }
-        _tasks.value = currentTasks
+        viewModelScope.launch {
+            taskDao.saveTasks(listOf(updatedTask))
+        }
     }
 
     fun search(query: String) {
