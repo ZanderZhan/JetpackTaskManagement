@@ -43,7 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
-import com.example.jetpacktaskmanagement.model.Task
+import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.viewmodel.TaskListViewModel
 import kotlinx.coroutines.launch
