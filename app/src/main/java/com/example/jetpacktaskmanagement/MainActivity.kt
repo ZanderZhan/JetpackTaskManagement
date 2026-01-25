@@ -67,7 +67,9 @@ fun JetpackTaskManagementApp(viewModel: TaskListViewModel) {
                 is TaskList -> NavEntry(key) {
                     TaskListScreen(
                         viewModel = viewModel,
-                        onAddTask = { backStack.add(TaskAdd) }
+                        onAddTask = {
+                            backStack.add(TaskAdd)
+                        }
                     )
                 }
                 is TaskAdd -> NavEntry(key) {

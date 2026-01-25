@@ -8,9 +8,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.switchMap
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.jetpacktaskmanagement.TaskApplication
+import com.example.jetpacktaskmanagement.dao.UserDao
+import com.example.jetpacktaskmanagement.entity.Gender
+import com.example.jetpacktaskmanagement.entity.User
 import com.example.jetpacktaskmanagement.model.Task
 import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.repository.TaskListRepository
@@ -18,10 +23,13 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import java.util.Date
 
 class TaskListViewModel(
-    private val savedStateHandle: SavedStateHandle, private val repository: TaskListRepository
+    private val userDao: UserDao,
+    private val savedStateHandle: SavedStateHandle,
+    private val repository: TaskListRepository,
 ) : ViewModel() {
 
     private val _localTasks = MutableLiveData<List<Task>>(repository.getLocalTasks())
@@ -107,6 +115,17 @@ class TaskListViewModel(
         _queryString.value = ""
     }
 
+    fun saveAUser() {
+        val user = User(
+            id = 0,
+            name = "zander",
+            gender = Gender.MALE
+        )
+        viewModelScope.launch {
+            userDao.insert(user)
+        }
+    }
+
     companion object {
         val REPOSITORY_KEY = object : CreationExtras.Key<TaskListRepository> {}
 
@@ -119,8 +138,9 @@ class TaskListViewModel(
                     this.get(REPOSITORY_KEY)
                     val repository = this[REPOSITORY_KEY]
                         ?: throw IllegalArgumentException("Repository not provided in extras")
+                    val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as TaskApplication
                     val savedStateHandle = createSavedStateHandle()
-                    TaskListViewModel(savedStateHandle, repository)
+                    TaskListViewModel(application.database.userDao(), savedStateHandle, repository)
                 }
             }
         }
