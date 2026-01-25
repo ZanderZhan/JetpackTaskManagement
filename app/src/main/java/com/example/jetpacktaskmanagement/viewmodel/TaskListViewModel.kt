@@ -13,10 +13,8 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.jetpacktaskmanagement.TaskApplication
-import com.example.jetpacktaskmanagement.dao.UserDao
-import com.example.jetpacktaskmanagement.entity.Gender
-import com.example.jetpacktaskmanagement.entity.User
-import com.example.jetpacktaskmanagement.model.Task
+import com.example.jetpacktaskmanagement.dao.TaskDao
+import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.repository.TaskListRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -27,12 +25,12 @@ import kotlinx.coroutines.launch
 import java.util.Date
 
 class TaskListViewModel(
-    private val userDao: UserDao,
+    private val taskDao: TaskDao,
     private val savedStateHandle: SavedStateHandle,
     private val repository: TaskListRepository,
 ) : ViewModel() {
 
-    private val _localTasks = MutableLiveData<List<Task>>(repository.getLocalTasks())
+    private val _localTasks = taskDao.getAll()
 
     private val _networkTasks = MutableLiveData<List<Task>>(repository.getNetworkTasks())
 
@@ -87,22 +85,28 @@ class TaskListViewModel(
     }
 
     fun addTask(description: String) {
-        val currentTasks = _tasks.value.orEmpty().toMutableList()
-        currentTasks.add(Task(false, description, Date()))
-        _tasks.value = currentTasks
+        viewModelScope.launch {
+            val newTask = Task(0, false, description, Date().toString())
+            taskDao.saveTasks(listOf(newTask))
+        }
     }
 
     fun removeTask(task: Task) {
-        val currentTasks = _tasks.value.orEmpty().toMutableList()
-        currentTasks.remove(task)
-        _tasks.value = currentTasks
+        viewModelScope.launch {
+            taskDao.deleteTask(task)
+        }
     }
 
     fun toggleTask(task: Task) {
-        val currentTasks = _tasks.value.orEmpty().map {
-            if (it == task) it.copy(checked = !it.checked) else it
+        val updatedTask = task.copy(checked = !task.checked)
+        val networkTasks = _networkTasks.value.orEmpty()
+        if (networkTasks.any { it == task }) {
+            _networkTasks.value = networkTasks.map { if (it == task) updatedTask else it }
+            return
         }
-        _tasks.value = currentTasks
+        viewModelScope.launch {
+            taskDao.saveTasks(listOf(updatedTask))
+        }
     }
 
     fun search(query: String) {
@@ -113,17 +117,6 @@ class TaskListViewModel(
     fun clearSearch(query: String) {
         savedStateHandle["query"] = ""
         _queryString.value = ""
-    }
-
-    fun saveAUser() {
-        val user = User(
-            id = 0,
-            name = "zander",
-            gender = Gender.MALE
-        )
-        viewModelScope.launch {
-            userDao.insert(user)
-        }
     }
 
     companion object {
@@ -140,7 +133,7 @@ class TaskListViewModel(
                         ?: throw IllegalArgumentException("Repository not provided in extras")
                     val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as TaskApplication
                     val savedStateHandle = createSavedStateHandle()
-                    TaskListViewModel(application.database.userDao(), savedStateHandle, repository)
+                    TaskListViewModel(application.database.taskDao(), savedStateHandle, repository)
                 }
             }
         }

@@ -1,35 +1,22 @@
 package com.example.jetpacktaskmanagement.repository
 
-import com.example.jetpacktaskmanagement.model.Task
-import java.util.Date
+import com.example.jetpacktaskmanagement.dao.TaskDao
+import com.example.jetpacktaskmanagement.entity.Task
+import java.sql.Date
 
-class TaskListRepository {
+class TaskListRepository() {
 
-    private fun getRandomDate(): Date {
+    private fun getRandomDate(): String {
         val tenDaysInMs = 10L * 24 * 60 * 60 * 1000
         val randomOffset = (0..tenDaysInMs).random()
-        return Date(System.currentTimeMillis() - randomOffset)
+        return Date(System.currentTimeMillis() - randomOffset).toString()
     }
 
-    fun getLocalTasks(): List<Task> {
-        return listOf(
-            Task(false, "Buy groceries", getRandomDate()),
-            Task(true, "Finish project proposal", getRandomDate()),
-            Task(false, "Call mom", getRandomDate()),
-            Task(false, "Go for a run", getRandomDate()),
-            Task(true, "Read a book", getRandomDate()),
-            Task(false, "Water the plants", getRandomDate()),
-            Task(false, "Clean the kitchen", getRandomDate()),
-            Task(true, "Pay bills", getRandomDate()),
-            Task(false, "Schedule dentist appointment", getRandomDate()),
-            Task(false, "Organize workspace", getRandomDate())
-        )
-    }
 
     fun getNetworkTasks(): List<Task> {
         return listOf(
-            Task(false, "Buy groceries", getRandomDate()),
-            Task(true, "Finish project proposal", getRandomDate()),
+            Task(0, false, "Buy groceries", getRandomDate()),
+            Task(0, true, "Finish project proposal", getRandomDate()),
         )
     }
 
