@@ -1,7 +1,6 @@
 package com.example.jetpacktaskmanagement.repository
 
 import com.example.jetpacktaskmanagement.entity.Task
-import java.sql.Date
 
 class TaskListRepository() {
 
