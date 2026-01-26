@@ -4,7 +4,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.map
@@ -15,6 +14,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.jetpacktaskmanagement.TaskApplication
 import com.example.jetpacktaskmanagement.dao.TaskDao
+import com.example.jetpacktaskmanagement.dao.UserDao
 import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.repository.TaskListRepository
@@ -26,9 +26,10 @@ import kotlinx.coroutines.launch
 
 class TaskListViewModel(
     private val taskDao: TaskDao,
+    private val userDao: UserDao,
     private val savedStateHandle: SavedStateHandle,
     private val repository: TaskListRepository,
-) : ViewModel() {
+) : UserViewModel(userDao) {
 
     private val _localTasks = taskDao.getAll()
 
@@ -132,7 +133,12 @@ class TaskListViewModel(
                         ?: throw IllegalArgumentException("Repository not provided in extras")
                     val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as TaskApplication
                     val savedStateHandle = createSavedStateHandle()
-                    TaskListViewModel(application.database.taskDao(), savedStateHandle, repository)
+                    TaskListViewModel(
+                        application.database.taskDao(),
+                        application.database.userDao(),
+                        savedStateHandle,
+                        repository
+                    )
                 }
             }
         }

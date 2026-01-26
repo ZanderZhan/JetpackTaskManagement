@@ -1,10 +1,10 @@
 package com.example.jetpacktaskmanagement.screen
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -40,6 +42,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
@@ -48,10 +51,14 @@ import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.viewmodel.TaskListViewModel
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Serializable
 data object TaskList : NavKey
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskListScreen(
     viewModel: TaskListViewModel,
@@ -71,8 +78,22 @@ fun TaskListScreen(
         }
     }
 
+    var showUserDialog by remember { mutableStateOf(false) }
+    val allUsers by viewModel.allUsers.observeAsState(emptyList())
+    val currentUser by viewModel.currentUser.observeAsState()
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                modifier = Modifier.clickable(onClick = {
+                    showUserDialog = true
+                }),
+                title = {
+                    Text(text = "Tasks for ${currentUser?.name ?: "Guest"}")
+                }
+            )
+        },
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End) {
                 AnimatedVisibility(
@@ -116,12 +137,13 @@ fun TaskListScreen(
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true
             )
-            
+
             Box(modifier = Modifier.fillMaxSize()) {
                 when (uiState) {
                     UIState.Loading -> {
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     }
+
                     UIState.Success -> {
                         LazyColumn(
                             state = listState,
@@ -136,6 +158,7 @@ fun TaskListScreen(
                             }
                         }
                     }
+
                     UIState.Error -> {
                         Text(
                             text = "No related task found. Please try again.",
@@ -166,6 +189,33 @@ fun TaskListScreen(
                     TextButton(onClick = { taskToDelete = null }) {
                         Text("Cancel")
                     }
+                }
+            )
+        }
+
+        if (showUserDialog) {
+            AlertDialog(
+                onDismissRequest = { showUserDialog = false },
+                title = { Text("Switch User") },
+                text = {
+                    LazyColumn {
+                        items(allUsers) { user ->
+                            Text(
+                                text = user.name,
+                                fontWeight = if (user.id == currentUser?.id) FontWeight.Bold else null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.switchToUser(user)
+                                        showUserDialog = false
+                                    }
+                                    .padding(16.dp)
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showUserDialog = false }) { Text("Close") }
                 }
             )
         }
@@ -204,7 +254,7 @@ fun TaskItem(
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(
-                text = task.date.toString(),
+                text = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(task.date)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
