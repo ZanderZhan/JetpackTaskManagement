@@ -37,7 +37,6 @@ abstract class AppRoom : RoomDatabase() {
                     "task_database"
                 )
                     .addMigrations(MIGRATION_2_3)
-                    .fallbackToDestructiveMigration(true)
                     .build()
                 _INSTANCE = instance
                 instance
