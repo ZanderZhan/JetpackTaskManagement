@@ -16,7 +16,7 @@ import java.util.Locale
 
 @Database(
     entities = [User::class, Task::class],
-    version = 3,
+    version = 4,
     autoMigrations = [AutoMigration(from = 1, to = 2)]
 )
 abstract class AppRoom : RoomDatabase() {
@@ -32,12 +32,8 @@ abstract class AppRoom : RoomDatabase() {
         fun getDatabase(context: Context): AppRoom {
             return _INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AppRoom::class.java,
-                    "task_database"
-                )
-                    .addMigrations(MIGRATION_2_3)
-                    .build()
+                    context.applicationContext, AppRoom::class.java, "task_database"
+                ).addMigrations(MIGRATION_2_3, MIGRATION_3_4).build()
                 _INSTANCE = instance
                 instance
             }
@@ -47,18 +43,14 @@ abstract class AppRoom : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // 1. Create a temporary table with the new schema
                 db.execSQL(
-                    "CREATE TABLE IF NOT EXISTS `tasks_temp` (" +
-                            "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
-                            "`checked` INTEGER NOT NULL, " +
-                            "`description` TEXT NOT NULL, " +
-                            "`date` INTEGER NOT NULL)"
+                    "CREATE TABLE IF NOT EXISTS `tasks_temp` (" + "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " + "`checked` INTEGER NOT NULL, " + "`description` TEXT NOT NULL, " + "`date` INTEGER NOT NULL)"
                 )
 
                 // 2. Preserve old Date() strings by parsing them in code
                 // We query the old table
                 val cursor = db.query("SELECT id, checked, description, date FROM tasks")
 
-                val sdf = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US)
+                val sdf = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.getDefault())
 
                 if (cursor.moveToFirst()) {
                     do {
@@ -79,6 +71,43 @@ abstract class AppRoom : RoomDatabase() {
                             put("checked", checked)
                             put("description", description)
                             put("date", timestamp)
+                        }
+
+                        db.insert("tasks_temp", SQLiteDatabase.CONFLICT_REPLACE, values)
+                    } while (cursor.moveToNext())
+                }
+                cursor.close()
+
+                // 3. Swap tables
+                db.execSQL("DROP TABLE tasks")
+                db.execSQL("ALTER TABLE tasks_temp RENAME TO tasks")
+            }
+        }
+
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 1. Create a temporary table with the new schema
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `tasks_temp` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userId` INTEGER NOT NULL, `checked` INTEGER NOT NULL, `description` TEXT NOT NULL, `date` INTEGER NOT NULL)"
+                )
+
+                // 2. We query the old table
+                val cursor = db.query("SELECT id, checked, description, date FROM tasks")
+
+
+                if (cursor.moveToFirst()) {
+                    do {
+                        val id = cursor.getInt(0)
+                        val checked = cursor.getInt(1)
+                        val description = cursor.getString(2)
+                        val date = cursor.getLong(3)
+
+                        val values = ContentValues().apply {
+                            put("id", id)
+                            put("userId", (0..9).random())
+                            put("checked", checked)
+                            put("description", description)
+                            put("date", date)
                         }
 
                         db.insert("tasks_temp", SQLiteDatabase.CONFLICT_REPLACE, values)

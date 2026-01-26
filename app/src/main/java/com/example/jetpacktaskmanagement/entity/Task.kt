@@ -9,6 +9,7 @@ import androidx.room.PrimaryKey
 )
 data class Task(
     @PrimaryKey(autoGenerate = true) val id: Int,
+    @ColumnInfo val userId: Int,
     @ColumnInfo val checked: Boolean,
     @ColumnInfo val description: String,
     @ColumnInfo val date: Long,

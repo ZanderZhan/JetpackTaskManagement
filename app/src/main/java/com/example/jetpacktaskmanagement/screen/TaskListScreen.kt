@@ -44,7 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.model.UIState
@@ -65,8 +64,8 @@ fun TaskListScreen(
     onAddTask: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val tasks by viewModel.tasks.observeAsState(emptyList())
+    val uiState by viewModel.uiState.observeAsState(UIState.Loading)
+    val userWithTasks by viewModel.userWithTasks.observeAsState()
     var taskToDelete by remember { mutableStateOf<Task?>(null) }
     val searchQuery by viewModel.queryString.observeAsState("")
 
@@ -80,7 +79,7 @@ fun TaskListScreen(
 
     var showUserDialog by remember { mutableStateOf(false) }
     val allUsers by viewModel.allUsers.observeAsState(emptyList())
-    val currentUser by viewModel.currentUser.observeAsState()
+    val currentUser = userWithTasks?.user
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -149,7 +148,7 @@ fun TaskListScreen(
                             state = listState,
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(tasks) { task ->
+                            items(userWithTasks?.tasks ?: emptyList()) { task ->
                                 TaskItem(
                                     task = task,
                                     onToggle = { viewModel.toggleTask(task) },

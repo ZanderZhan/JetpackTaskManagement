@@ -3,6 +3,7 @@ package com.example.jetpacktaskmanagement.repository
 import com.example.jetpacktaskmanagement.entity.Gender
 import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.entity.User
+import kotlinx.coroutines.delay
 
 class TaskListRepository() {
 
@@ -12,10 +13,11 @@ class TaskListRepository() {
         return System.currentTimeMillis() - randomOffset
     }
 
-    fun getNetworkTasks(): List<Task> {
+    suspend fun getNetworkTasks(): List<Task> {
+        delay(5000)
         return listOf(
-            Task(0, false, "Buy groceries", getRandomDate()),
-            Task(0, true, "Finish project proposal", getRandomDate()),
+//            Task(0, userId = (0..9).random(),false, "Network: Buy groceries", getRandomDate()),
+//            Task(0,  (0..9).random(),true, "Network: Finish project proposal", getRandomDate()),
         )
     }
 
@@ -45,6 +47,7 @@ class TaskListRepository() {
         return List(20) { index ->
             Task(
                 id = 0,
+                userId = (0..9).random(),
                 checked = (0..1).random() == 1,
                 description = descriptions.getOrElse(index) { "Task $index" },
                 date = getRandomDate()

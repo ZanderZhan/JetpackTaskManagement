@@ -6,7 +6,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
-import androidx.lifecycle.map
 import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -16,13 +15,13 @@ import com.example.jetpacktaskmanagement.TaskApplication
 import com.example.jetpacktaskmanagement.dao.TaskDao
 import com.example.jetpacktaskmanagement.dao.UserDao
 import com.example.jetpacktaskmanagement.entity.Task
+import com.example.jetpacktaskmanagement.entity.UserWithTasks
 import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.repository.TaskListRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+
 
 class TaskListViewModel(
     private val taskDao: TaskDao,
@@ -31,27 +30,35 @@ class TaskListViewModel(
     private val repository: TaskListRepository,
 ) : UserViewModel(userDao) {
 
-    private val _localTasks = taskDao.getAll()
-
-    private val _networkTasks = MutableLiveData<List<Task>>(repository.getNetworkTasks())
-
+    // todo 1: implement task query
     private val _queryString = MutableLiveData(savedStateHandle["query"] ?: "")
     val queryString: LiveData<String> = _queryString
 
-    private val _tasks = MediatorLiveData<List<Task>>()
+    // todo 2: move uiState to another place, making it reusable
+    private val _uiState = MediatorLiveData(UIState.Loading)
+    val uiState: LiveData<UIState> = _uiState
 
-    private val _uiState = MutableStateFlow<UIState>(UIState.Loading)
-    val uiState: StateFlow<UIState> = _uiState
+    // todo 3: implement a MutableStateFlow data
+
+    //    private val _tasks = MediatorLiveData<List<Task>>()
 
     // switchMap will trigger a problem:
     // _tasks may not be attached to UI at first, so it may not initialise through
     // addSource onChange.
     // this will lead to: if _queryString is not empty at start, the screen may
     // produce an Error uiState.
-    val tasks: LiveData<List<Task>> = _queryString.switchMap { query ->
-        val baseTasks = if (query.isEmpty()) _tasks else MutableLiveData(_search(query))
-        // Sorting happens here in the ViewModel
-        baseTasks.map { list -> list.sortedBy { it.checked } }
+//    val tasks: LiveData<List<Task>> = _queryString.switchMap { query ->
+//        val baseTasks = if (query.isEmpty()) _tasks else MutableLiveData(_search(query))
+//        // Sorting happens here in the ViewModel
+//        baseTasks.map { list -> list.sortedBy { it.checked } }
+//    }
+
+    val userWithTasks: LiveData<UserWithTasks?> = currentUser.switchMap { user ->
+        if (user != null) {
+            userDao.getSpecificUserWithTasks(user.id)
+        } else {
+            MutableLiveData(null)
+        }
     }
 
     private val _showSnacked = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
@@ -59,20 +66,35 @@ class TaskListViewModel(
 
 
     init {
-        _tasks.addSource(_localTasks) { local ->
-            _uiState.value = UIState.Success
-            _tasks.value = local.orEmpty() + _networkTasks.value.orEmpty()
-            _search(_queryString.value.orEmpty())
+//        _tasks.addSource(_localTasks) { local ->
+//            _uiState.value = UIState.Success
+//            _tasks.value = local.orEmpty() + _networkTasks.value.orEmpty()
+//            _search(_queryString.value.orEmpty())
+//        }
+//        _tasks.addSource(_networkTasks) { network ->
+//            _uiState.value = UIState.Success
+//            _tasks.value = _localTasks.value.orEmpty() + network.orEmpty()
+//            _search(_queryString.value.orEmpty())
+//        }
+
+        viewModelScope.launch {
+            var tasks = repository.getNetworkTasks()
+            taskDao.saveTasks(tasks)
         }
-        _tasks.addSource(_networkTasks) { network ->
-            _uiState.value = UIState.Success
-            _tasks.value = _localTasks.value.orEmpty() + network.orEmpty()
-            _search(_queryString.value.orEmpty())
+
+        _uiState.addSource(userWithTasks) { userWithTasks ->
+            if (userWithTasks == null) {
+                _uiState.value = UIState.Loading
+            } else if (userWithTasks.tasks.isEmpty()) {
+                _uiState.value = UIState.Error
+            } else {
+                _uiState.value = UIState.Success
+            }
         }
     }
 
     private fun _search(query: String): List<Task> {
-        val currentTasks = _tasks.value.orEmpty().filter {
+        val currentTasks = userWithTasks.value?.tasks.orEmpty().filter {
             it.description.contains(query, ignoreCase = true)
         }
         if (currentTasks.isEmpty()) {
@@ -86,7 +108,8 @@ class TaskListViewModel(
 
     fun addTask(description: String) {
         viewModelScope.launch {
-            val newTask = Task(0, false, description, System.currentTimeMillis())
+            val newTask =
+                Task(0, currentUser.value?.id ?: 0, false, description, System.currentTimeMillis())
             taskDao.saveTasks(listOf(newTask))
         }
     }
@@ -98,14 +121,8 @@ class TaskListViewModel(
     }
 
     fun toggleTask(task: Task) {
-        val updatedTask = task.copy(checked = !task.checked)
-        val networkTasks = _networkTasks.value.orEmpty()
-        if (networkTasks.any { it == task }) {
-            _networkTasks.value = networkTasks.map { if (it == task) updatedTask else it }
-            return
-        }
         viewModelScope.launch {
-            taskDao.saveTasks(listOf(updatedTask))
+            taskDao.saveTasks(listOf(task))
         }
     }
 
@@ -131,7 +148,8 @@ class TaskListViewModel(
                     this.get(REPOSITORY_KEY)
                     val repository = this[REPOSITORY_KEY]
                         ?: throw IllegalArgumentException("Repository not provided in extras")
-                    val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as TaskApplication
+                    val application =
+                        this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as TaskApplication
                     val savedStateHandle = createSavedStateHandle()
                     TaskListViewModel(
                         application.database.taskDao(),
