@@ -7,6 +7,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.map
 import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -22,7 +23,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.util.Date
 
 class TaskListViewModel(
     private val taskDao: TaskDao,
@@ -48,9 +48,9 @@ class TaskListViewModel(
     // this will lead to: if _queryString is not empty at start, the screen may
     // produce an Error uiState.
     val tasks: LiveData<List<Task>> = _queryString.switchMap { query ->
-        if (query.isEmpty()) return@switchMap _tasks
-        val currentTasks = _search(query)
-        return@switchMap MutableLiveData(currentTasks)
+        val baseTasks = if (query.isEmpty()) _tasks else MutableLiveData(_search(query))
+        // Sorting happens here in the ViewModel
+        baseTasks.map { list -> list.sortedBy { it.checked } }
     }
 
     private val _showSnacked = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
@@ -71,7 +71,6 @@ class TaskListViewModel(
     }
 
     private fun _search(query: String): List<Task> {
-        val query = _queryString.value.orEmpty()
         val currentTasks = _tasks.value.orEmpty().filter {
             it.description.contains(query, ignoreCase = true)
         }
@@ -86,7 +85,7 @@ class TaskListViewModel(
 
     fun addTask(description: String) {
         viewModelScope.launch {
-            val newTask = Task(0, false, description, Date().toString())
+            val newTask = Task(0, false, description, System.currentTimeMillis())
             taskDao.saveTasks(listOf(newTask))
         }
     }
