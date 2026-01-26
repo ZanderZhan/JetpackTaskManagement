@@ -7,6 +7,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.map
 import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -48,9 +49,9 @@ class TaskListViewModel(
     // this will lead to: if _queryString is not empty at start, the screen may
     // produce an Error uiState.
     val tasks: LiveData<List<Task>> = _queryString.switchMap { query ->
-        if (query.isEmpty()) return@switchMap _tasks
-        val currentTasks = _search(query)
-        return@switchMap MutableLiveData(currentTasks)
+        val baseTasks = if (query.isEmpty()) _tasks else MutableLiveData(_search(query))
+        // Sorting happens here in the ViewModel
+        baseTasks.map { list -> list.sortedBy { it.checked } }
     }
 
     private val _showSnacked = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
