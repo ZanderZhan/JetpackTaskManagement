@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.util.Date
 
 class TaskListViewModel(
     private val taskDao: TaskDao,
@@ -72,7 +71,6 @@ class TaskListViewModel(
     }
 
     private fun _search(query: String): List<Task> {
-        val query = _queryString.value.orEmpty()
         val currentTasks = _tasks.value.orEmpty().filter {
             it.description.contains(query, ignoreCase = true)
         }
