@@ -5,10 +5,10 @@ import java.sql.Date
 
 class TaskListRepository() {
 
-    private fun getRandomDate(): String {
+    private fun getRandomDate(): Long {
         val tenDaysInMs = 10L * 24 * 60 * 60 * 1000
         val randomOffset = (0..tenDaysInMs).random()
-        return Date(System.currentTimeMillis() - randomOffset).toString()
+        return System.currentTimeMillis() - randomOffset
     }
 
 

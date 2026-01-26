@@ -87,7 +87,7 @@ class TaskListViewModel(
 
     fun addTask(description: String) {
         viewModelScope.launch {
-            val newTask = Task(0, false, description, Date().toString())
+            val newTask = Task(0, false, description, System.currentTimeMillis())
             taskDao.saveTasks(listOf(newTask))
         }
     }
