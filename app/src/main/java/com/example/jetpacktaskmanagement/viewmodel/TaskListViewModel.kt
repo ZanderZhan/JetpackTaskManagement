@@ -72,7 +72,6 @@ class TaskListViewModel(
     }
 
     private fun _search(query: String): List<Task> {
-        val query = _queryString.value.orEmpty()
         val currentTasks = _tasks.value.orEmpty().filter {
             it.description.contains(query, ignoreCase = true)
         }
