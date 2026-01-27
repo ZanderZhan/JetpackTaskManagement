@@ -1,12 +1,10 @@
 package com.example.jetpacktaskmanagement
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.HasDefaultViewModelProviderFactory
@@ -41,12 +39,6 @@ class MainActivity : ComponentActivity() {
                         this[TaskListViewModel.REPOSITORY_KEY] = TaskListViewModel.taskListRepository
                     }
                 )
-
-                LaunchedEffect(viewModel.showSnacked) {
-                    viewModel.showSnacked.collect {
-                        Toast.makeText(this@MainActivity, "nothing found", Toast.LENGTH_SHORT).show()
-                    }
-                }
 
                 JetpackTaskManagementApp(viewModel)
             }

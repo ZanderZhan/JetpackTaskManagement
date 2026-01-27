@@ -20,8 +20,6 @@ import com.example.jetpacktaskmanagement.model.IUiState
 import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.model.UiStateViewModel
 import com.example.jetpacktaskmanagement.repository.TaskListRepository
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 
 
@@ -36,27 +34,13 @@ class TaskListViewModel(
     private val _queryString = MutableLiveData(savedStateHandle["query"] ?: "")
     val queryString: LiveData<String> = _queryString
 
-    // todo 3: implement a MutableStateFlow data
-
-    //    private val _tasks = MediatorLiveData<List<Task>>()
-
-    // switchMap will trigger a problem:
-    // _tasks may not be attached to UI at first, so it may not initialise through
-    // addSource onChange.
-    // this will lead to: if _queryString is not empty at start, the screen may
-    // produce an Error uiState.
-//    val tasks: LiveData<List<Task>> = _queryString.switchMap { query ->
-//        val baseTasks = if (query.isEmpty()) _tasks else MutableLiveData(_search(query))
-//        // Sorting happens here in the ViewModel
-//        baseTasks.map { list -> list.sortedBy { it.checked } }
-//    }
-
     private var _userWithTasks: LiveData<UserWithTasks?> = currentUser.switchMap { user ->
         if (user != null) {
             userDao.getSpecificUserWithTasks(user.id)
         } else {
             MutableLiveData(null)
         }
+
     }
 
     val userWithTasks = MediatorLiveData<UserWithTasks?>().apply {
@@ -86,9 +70,6 @@ class TaskListViewModel(
             updateTasks()
         }
     }
-
-    private val _showSnacked = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
-    val showSnacked: SharedFlow<Boolean> = _showSnacked
 
     init {
         viewModelScope.launch {
@@ -132,11 +113,6 @@ class TaskListViewModel(
         _queryString.value = query
     }
 
-    fun clearSearch(query: String) {
-        savedStateHandle["query"] = ""
-        _queryString.value = ""
-    }
-
     companion object {
         val REPOSITORY_KEY = object : CreationExtras.Key<TaskListRepository> {}
 
@@ -145,7 +121,6 @@ class TaskListViewModel(
         fun provideFactory(): ViewModelProvider.Factory {
             return viewModelFactory {
                 initializer {
-//                    val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]
                     this.get(REPOSITORY_KEY)
                     val repository = this[REPOSITORY_KEY]
                         ?: throw IllegalArgumentException("Repository not provided in extras")
