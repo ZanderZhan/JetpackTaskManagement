@@ -16,7 +16,9 @@ import com.example.jetpacktaskmanagement.dao.TaskDao
 import com.example.jetpacktaskmanagement.dao.UserDao
 import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.entity.UserWithTasks
+import com.example.jetpacktaskmanagement.model.IUiState
 import com.example.jetpacktaskmanagement.model.UIState
+import com.example.jetpacktaskmanagement.model.UiStateViewModel
 import com.example.jetpacktaskmanagement.repository.TaskListRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -28,14 +30,11 @@ class TaskListViewModel(
     private val userDao: UserDao,
     private val savedStateHandle: SavedStateHandle,
     private val repository: TaskListRepository,
-) : UserViewModel(userDao) {
+    uiStateViewModel: IUiState = UiStateViewModel(UIState.Loading)
+) : IUiState by uiStateViewModel, UserViewModel(userDao) {
 
     private val _queryString = MutableLiveData(savedStateHandle["query"] ?: "")
     val queryString: LiveData<String> = _queryString
-
-    // todo 2: move uiState to another place, making it reusable
-    private val _uiState = MediatorLiveData(UIState.Loading)
-    val uiState: LiveData<UIState> = _uiState
 
     // todo 3: implement a MutableStateFlow data
 
@@ -97,29 +96,15 @@ class TaskListViewModel(
             taskDao.saveTasks(tasks)
         }
 
-        _uiState.addSource(userWithTasks) { userWithTasks ->
+        uiStateViewModel.addSource(userWithTasks) { userWithTasks ->
             if (userWithTasks == null) {
-                _uiState.value = UIState.Loading
+                UIState.Loading
             } else if (userWithTasks.tasks.isEmpty()) {
-                _uiState.value = UIState.Error
+                UIState.Error
             } else {
-                _uiState.value = UIState.Success
+                UIState.Success
             }
         }
-    }
-
-
-    private fun _search(query: String): List<Task> {
-        val currentTasks = userWithTasks.value?.tasks.orEmpty().filter {
-            it.description.contains(query, ignoreCase = true)
-        }
-        if (currentTasks.isEmpty()) {
-            _uiState.value = UIState.Error
-            _showSnacked.tryEmit(true)
-        } else {
-            _uiState.value = UIState.Success
-        }
-        return currentTasks
     }
 
     fun addTask(description: String) {
