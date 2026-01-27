@@ -115,12 +115,38 @@ abstract class AppRoom : RoomDatabase() {
 
         private val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // 1. Create a temporary table with the new schema
+                // 1. Create users if they don't already exist (for migrated databases)
+                val userNames = listOf(
+                    "Alice", "Bob", "Charlie", "David", "Eve",
+                    "Frank", "Grace", "Heidi", "Ivan", "Judy"
+                )
+                val genders = listOf(0, 1, 2) // UNSPECIFIED, MALE, FEMALE
+                
+                // Check if users table exists and has any users
+                val userCursor = db.query("SELECT COUNT(*) FROM users")
+                var userCount = 0
+                if (userCursor.moveToFirst()) {
+                    userCount = userCursor.getInt(0)
+                }
+                userCursor.close()
+                
+                // If no users exist, create 10 default users
+                if (userCount == 0) {
+                    for (i in 0 until 10) {
+                        val values = ContentValues().apply {
+                            put("name", userNames[i])
+                            put("gender", genders.random())
+                        }
+                        db.insert("users", SQLiteDatabase.CONFLICT_IGNORE, values)
+                    }
+                }
+                
+                // 2. Create a temporary table with the new schema
                 db.execSQL(
                     "CREATE TABLE IF NOT EXISTS `tasks_temp` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userId` INTEGER NOT NULL, `checked` INTEGER NOT NULL, `description` TEXT NOT NULL, `date` INTEGER NOT NULL)"
                 )
 
-                // 2. We query the old table
+                // 3. We query the old table
                 val cursor = db.query("SELECT id, checked, description, date FROM tasks")
 
 
@@ -133,7 +159,8 @@ abstract class AppRoom : RoomDatabase() {
 
                         val values = ContentValues().apply {
                             put("id", id)
-                            put("userId", (0..9).random())
+                            // Assign to users with IDs 1-10 (auto-generated IDs start from 1)
+                            put("userId", (1..10).random())
                             put("checked", checked)
                             put("description", description)
                             put("date", date)
@@ -144,7 +171,7 @@ abstract class AppRoom : RoomDatabase() {
                 }
                 cursor.close()
 
-                // 3. Swap tables
+                // 4. Swap tables
                 db.execSQL("DROP TABLE tasks")
                 db.execSQL("ALTER TABLE tasks_temp RENAME TO tasks")
             }
