@@ -64,7 +64,7 @@ abstract class AppRoom : RoomDatabase() {
             val users = repository.generateUsers()
             val tasks = repository.generateTasks()
             
-            userDao.insert(users)
+            userDao.insertAll(users)
             taskDao.saveTasks(tasks)
         }
 

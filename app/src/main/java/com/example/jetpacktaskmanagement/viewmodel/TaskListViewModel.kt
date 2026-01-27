@@ -50,11 +50,7 @@ class TaskListViewModel(
                 var tasks = _userWithTasks.value?.tasks.orEmpty()
                 val query = _queryString.value.orEmpty()
 
-                var result = if (tasks.isEmpty()) {
-                    tasks
-                } else {
-                    tasks.filter { it.description.contains(query, ignoreCase = true) }
-                }
+                var result = tasks.filter { it.description.contains(query, ignoreCase = true) }
 
                 result = result.sortedBy { it.checked }
 
