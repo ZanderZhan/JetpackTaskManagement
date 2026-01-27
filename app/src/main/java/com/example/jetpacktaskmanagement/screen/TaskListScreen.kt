@@ -63,9 +63,6 @@ import java.util.Locale
 @Serializable
 data object TaskList : NavKey
 
-// Thread-safe date formatter for task display
-private val taskDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskListScreen(
@@ -243,6 +240,8 @@ fun TaskItem(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dateFormatter = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+    
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -267,7 +266,7 @@ fun TaskItem(
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(
-                text = taskDateFormatter.format(Date(task.date)),
+                text = dateFormatter.format(Date(task.date)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

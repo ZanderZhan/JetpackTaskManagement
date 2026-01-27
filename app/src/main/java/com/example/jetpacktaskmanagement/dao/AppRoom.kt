@@ -38,7 +38,7 @@ abstract class AppRoom : RoomDatabase() {
 
         fun getDatabase(context: Context): AppRoom {
             return _INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
+                Room.databaseBuilder(
                     context.applicationContext, AppRoom::class.java, "task_database"
                 )
                     .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
@@ -53,9 +53,7 @@ abstract class AppRoom : RoomDatabase() {
                             }
                         }
                     })
-                    .build()
-                _INSTANCE = instance
-                instance
+                    .build().also { _INSTANCE = it }
             }
         }
         
@@ -141,10 +139,22 @@ abstract class AppRoom : RoomDatabase() {
                     }
                 }
                 
-                // 2. Create a temporary table with the new schema
+                // 2. Create a temporary table with the new schema including foreign key and index
                 db.execSQL(
-                    "CREATE TABLE IF NOT EXISTS `tasks_temp` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userId` INTEGER NOT NULL, `checked` INTEGER NOT NULL, `description` TEXT NOT NULL, `date` INTEGER NOT NULL)"
+                    """
+                    CREATE TABLE IF NOT EXISTS `tasks_temp` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `userId` INTEGER NOT NULL,
+                        `checked` INTEGER NOT NULL,
+                        `description` TEXT NOT NULL,
+                        `date` INTEGER NOT NULL,
+                        FOREIGN KEY(`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
                 )
+                
+                // Create index on userId
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_tasks_temp_userId` ON `tasks_temp` (`userId`)")
 
                 // 3. We query the old table
                 val cursor = db.query("SELECT id, checked, description, date FROM tasks")

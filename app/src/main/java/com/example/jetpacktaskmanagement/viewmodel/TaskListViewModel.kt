@@ -74,10 +74,9 @@ class TaskListViewModel(
         }
 
         uiStateViewModel.addSource(userWithTasks) { userWithTasks ->
-            if (userWithTasks == null) {
-                UIState.Loading
-            } else {
-                UIState.Success
+            when (userWithTasks) {
+                null -> UIState.Loading
+                else -> UIState.Success
             }
         }
     }
