@@ -80,8 +80,6 @@ class TaskListViewModel(
         uiStateViewModel.addSource(userWithTasks) { userWithTasks ->
             if (userWithTasks == null) {
                 UIState.Loading
-            } else if (userWithTasks.tasks.isEmpty()) {
-                UIState.Error
             } else {
                 UIState.Success
             }
@@ -90,8 +88,14 @@ class TaskListViewModel(
 
     fun addTask(description: String) {
         viewModelScope.launch {
+            val userId = currentUser.value?.id
+            if (userId == null) {
+                // No current user selected; do not create an orphaned task
+                return@launch
+            }
+
             val newTask =
-                Task(0, currentUser.value?.id ?: 0, false, description, System.currentTimeMillis())
+                Task(0, userId, false, description, System.currentTimeMillis())
             taskDao.saveTasks(listOf(newTask))
         }
     }
@@ -104,7 +108,8 @@ class TaskListViewModel(
 
     fun toggleTask(task: Task) {
         viewModelScope.launch {
-            taskDao.saveTasks(listOf(task))
+            val updatedTask = task.copy(checked = !task.checked)
+            taskDao.saveTasks(listOf(updatedTask))
         }
     }
 

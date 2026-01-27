@@ -11,6 +11,11 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.entity.User
+import com.example.jetpacktaskmanagement.repository.TaskListRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -28,15 +33,39 @@ abstract class AppRoom : RoomDatabase() {
     companion object {
         @Volatile
         private var _INSTANCE: AppRoom? = null
+        
+        private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
         fun getDatabase(context: Context): AppRoom {
             return _INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext, AppRoom::class.java, "task_database"
-                ).addMigrations(MIGRATION_2_3, MIGRATION_3_4).build()
+                )
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+                    .addCallback(object : Callback() {
+                        override fun onCreate(db: SupportSQLiteDatabase) {
+                            super.onCreate(db)
+                            // Populate database with initial users and tasks
+                            _INSTANCE?.let { database ->
+                                applicationScope.launch {
+                                    populateDatabase(database.userDao(), database.taskDao())
+                                }
+                            }
+                        }
+                    })
+                    .build()
                 _INSTANCE = instance
                 instance
             }
+        }
+        
+        private suspend fun populateDatabase(userDao: UserDao, taskDao: TaskDao) {
+            val repository = TaskListRepository()
+            val users = repository.generateUsers()
+            val tasks = repository.generateTasks()
+            
+            userDao.insert(users)
+            taskDao.saveTasks(tasks)
         }
 
         private val MIGRATION_2_3 = object : Migration(2, 3) {
@@ -50,7 +79,7 @@ abstract class AppRoom : RoomDatabase() {
                 // We query the old table
                 val cursor = db.query("SELECT id, checked, description, date FROM tasks")
 
-                val sdf = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.getDefault())
+                val sdf = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US)
 
                 if (cursor.moveToFirst()) {
                     do {
