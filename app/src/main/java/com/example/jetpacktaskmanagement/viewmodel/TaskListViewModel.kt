@@ -30,7 +30,6 @@ class TaskListViewModel(
     private val repository: TaskListRepository,
 ) : UserViewModel(userDao) {
 
-    // todo 1: implement task query
     private val _queryString = MutableLiveData(savedStateHandle["query"] ?: "")
     val queryString: LiveData<String> = _queryString
 
@@ -53,7 +52,7 @@ class TaskListViewModel(
 //        baseTasks.map { list -> list.sortedBy { it.checked } }
 //    }
 
-    val userWithTasks: LiveData<UserWithTasks?> = currentUser.switchMap { user ->
+    private var _userWithTasks: LiveData<UserWithTasks?> = currentUser.switchMap { user ->
         if (user != null) {
             userDao.getSpecificUserWithTasks(user.id)
         } else {
@@ -61,22 +60,38 @@ class TaskListViewModel(
         }
     }
 
+    val userWithTasks = MediatorLiveData<UserWithTasks?>().apply {
+        fun updateTasks() {
+            _userWithTasks.value?.let {
+
+                var tasks = _userWithTasks.value?.tasks.orEmpty()
+                val query = _queryString.value.orEmpty()
+
+                var result = if (tasks.isEmpty()) {
+                    tasks
+                } else {
+                    tasks.filter { it.description.contains(query, ignoreCase = true) }
+                }
+
+                result = result.sortedBy { it.checked }
+
+                value = UserWithTasks(it.user, result)
+            }
+
+        }
+
+        addSource(_userWithTasks) {
+            updateTasks()
+        }
+        addSource(_queryString) {
+            updateTasks()
+        }
+    }
+
     private val _showSnacked = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
     val showSnacked: SharedFlow<Boolean> = _showSnacked
 
-
     init {
-//        _tasks.addSource(_localTasks) { local ->
-//            _uiState.value = UIState.Success
-//            _tasks.value = local.orEmpty() + _networkTasks.value.orEmpty()
-//            _search(_queryString.value.orEmpty())
-//        }
-//        _tasks.addSource(_networkTasks) { network ->
-//            _uiState.value = UIState.Success
-//            _tasks.value = _localTasks.value.orEmpty() + network.orEmpty()
-//            _search(_queryString.value.orEmpty())
-//        }
-
         viewModelScope.launch {
             var tasks = repository.getNetworkTasks()
             taskDao.saveTasks(tasks)
@@ -92,6 +107,7 @@ class TaskListViewModel(
             }
         }
     }
+
 
     private fun _search(query: String): List<Task> {
         val currentTasks = userWithTasks.value?.tasks.orEmpty().filter {
