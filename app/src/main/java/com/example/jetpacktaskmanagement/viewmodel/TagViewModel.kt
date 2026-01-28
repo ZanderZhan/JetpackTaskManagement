@@ -5,37 +5,35 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.example.jetpacktaskmanagement.TaskApplication
-import com.example.jetpacktaskmanagement.dao.TaskDao
-import com.example.jetpacktaskmanagement.entity.TaskWithTags
+import com.example.jetpacktaskmanagement.dao.TagDao
+import com.example.jetpacktaskmanagement.entity.Tag
+import com.example.jetpacktaskmanagement.entity.Task
 
-class TaskDetailViewModel(
-    private val taskDao: TaskDao,
-    private val taskId: Int,
+class TagViewModel(
+    private val tagId: Int,
+    private val tagDao: TagDao,
 ) : ViewModel() {
 
-    private val _task = taskDao.getTaskWithTags(taskId)
-
-    val task: LiveData<TaskWithTags> = _task
+    val tagWithTasks: LiveData<Map<Tag, List<Task>>> = tagDao.getTagWithTasks(tagId)
 
     companion object {
-
-        fun provideFactory(taskId: Int): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
+        fun provideFactory(
+            tagId: Int
+        ): ViewModelProvider.Factory {
+            return object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(
                     modelClass: Class<T>,
                     extras: CreationExtras
                 ): T {
-                    if (!modelClass.isAssignableFrom(TaskDetailViewModel::class.java)) {
+                    if (!modelClass.isAssignableFrom(TagViewModel::class.java)) {
                         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
                     }
-                    val application =
+                    val application: TaskApplication =
                         checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as? TaskApplication)
                     @Suppress("UNCHECKED_CAST")
-                    return TaskDetailViewModel(application.database.taskDao(), taskId) as T
+                    return TagViewModel(tagId, application.database.tagDao()) as T
                 }
             }
-
+        }
     }
-
-
 }

@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.HasDefaultViewModelProviderFactory
@@ -15,6 +16,8 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
+import com.example.jetpacktaskmanagement.screen.TagKey
+import com.example.jetpacktaskmanagement.screen.TagScreen
 import com.example.jetpacktaskmanagement.screen.TaskAdd
 import com.example.jetpacktaskmanagement.screen.TaskAddScreen
 import com.example.jetpacktaskmanagement.screen.TaskDetail
@@ -22,6 +25,7 @@ import com.example.jetpacktaskmanagement.screen.TaskDetailScreen
 import com.example.jetpacktaskmanagement.screen.TaskList
 import com.example.jetpacktaskmanagement.screen.TaskListScreen
 import com.example.jetpacktaskmanagement.ui.theme.JetpackTaskManagementTheme
+import com.example.jetpacktaskmanagement.viewmodel.TagViewModel
 import com.example.jetpacktaskmanagement.viewmodel.TaskDetailViewModel
 import com.example.jetpacktaskmanagement.viewmodel.TaskListViewModel
 
@@ -29,8 +33,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val themeDataStore = ThemeDataStore(application)
         setContent {
-            JetpackTaskManagementTheme {
+            val darkTheme = themeDataStore.isDarkTheme
+                .collectAsState(false)
+            JetpackTaskManagementTheme(
+                darkTheme = darkTheme.value
+            ) {
                 val viewModelStoreOwner: ViewModelStoreOwner =
                     checkNotNull(LocalViewModelStoreOwner.current)
                 val viewModel: TaskListViewModel = viewModel(
@@ -85,10 +94,24 @@ fun JetpackTaskManagementApp(viewModel: TaskListViewModel) {
                 is TaskDetail -> NavEntry(key) {
                     val viewModel: TaskDetailViewModel = viewModel(
                         factory = TaskDetailViewModel.provideFactory(key.detailId),
+                        key = key.detailId.toString(),
                     )
                     TaskDetailScreen(viewModel, onBack = {
                         backStack.removeLastOrNull()
+                    }, onTag = { tagId ->
+                        backStack.add(TagKey(tagId))
                     })
+                }
+
+                is TagKey -> NavEntry(key) {
+                    val viewModel: TagViewModel = viewModel(
+                        factory = TagViewModel.provideFactory(key.tagId),
+                        key = key.tagId.toString(),
+                    )
+                    TagScreen(viewModel, onBack = {
+                        backStack.removeLastOrNull()
+                    })
+
                 }
 
                 else -> NavEntry(Unit) { }

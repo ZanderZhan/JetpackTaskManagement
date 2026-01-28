@@ -28,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
-import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.viewmodel.TaskDetailViewModel
 import kotlinx.serialization.Serializable
 import java.text.SimpleDateFormat
@@ -43,6 +42,7 @@ data class TaskDetail(val detailId: Int) : NavKey
 fun TaskDetailScreen(
     viewModel: TaskDetailViewModel,
     onBack: () -> Unit,
+    onTag: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -139,7 +139,7 @@ fun TaskDetailScreen(
                 LazyRow {
                     items(tags) { tag ->
                         AssistChip(
-                            onClick = { },
+                            onClick = { onTag(tag.id) },
                             label = { Text(tag.name) },
                             modifier = Modifier.padding(end = 8.dp)
                         )
