@@ -88,6 +88,7 @@ fun JetpackTaskManagementApp(viewModel: TaskListViewModel) {
                 is TaskDetail -> NavEntry(key) {
                     val viewModel: TaskDetailViewModel = viewModel(
                         factory = TaskDetailViewModel.provideFactory(key.detailId),
+                        key = key.detailId.toString(),
                     )
                     TaskDetailScreen(viewModel, onBack = {
                         backStack.removeLastOrNull()
@@ -99,6 +100,7 @@ fun JetpackTaskManagementApp(viewModel: TaskListViewModel) {
                 is TagKey -> NavEntry(key) {
                     val viewModel: TagViewModel = viewModel(
                         factory = TagViewModel.provideFactory(key.tagId),
+                        key = key.tagId.toString(),
                     )
                     TagScreen(viewModel, onBack = {
                         backStack.removeLastOrNull()
