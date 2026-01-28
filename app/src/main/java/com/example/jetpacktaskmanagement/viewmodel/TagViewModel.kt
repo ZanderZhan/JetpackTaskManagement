@@ -25,7 +25,7 @@ class TagViewModel(
                     extras: CreationExtras
                 ): T {
                     if (!modelClass.isAssignableFrom(TagViewModel::class.java)) {
-                        throw IllegalArgumentException("Unknown ViewModel class")
+                        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
                     }
                     val application: TaskApplication =
                         checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as? TaskApplication)
