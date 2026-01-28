@@ -10,10 +10,10 @@ import androidx.room.PrimaryKey
 data class Tag(
     @PrimaryKey(autoGenerate = true) val id: Int,
     @ColumnInfo val name: String,
-    @ColumnInfo val priority: TaskPriority,
+    @ColumnInfo val priority: TagPriority,
 )
 
-enum class TaskPriority {
+enum class TagPriority {
     LOW,
     MEDIUM,
     HIGH

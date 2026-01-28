@@ -26,8 +26,12 @@ class TaskDetailViewModel(
                     modelClass: Class<T>,
                     extras: CreationExtras
                 ): T {
+                    if (!modelClass.isAssignableFrom(TaskDetailViewModel::class.java)) {
+                        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+                    }
                     val application =
                         checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as? TaskApplication)
+                    @Suppress("UNCHECKED_CAST")
                     return TaskDetailViewModel(application.database.taskDao(), taskId) as T
                 }
             }

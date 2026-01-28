@@ -47,8 +47,40 @@ fun TaskDetailScreen(
 ) {
 
     val taskWithTags by viewModel.task.observeAsState()
-    val task = taskWithTags?.task ?: Task(-1, -1, false, "", 0)
-    val tags = taskWithTags?.tags ?: emptyList()
+
+    // Show loading or error state when task is null
+    if (taskWithTags == null) {
+        Scaffold(
+            modifier = modifier.fillMaxSize(),
+            topBar = {
+                TopAppBar(
+                    title = { Text("Task Detail") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                )
+            }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Task not found",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+        return
+    }
+
+    val task = taskWithTags!!.task
+    val tags = taskWithTags!!.tags
 
 
     val dateString = remember(task.date) {
