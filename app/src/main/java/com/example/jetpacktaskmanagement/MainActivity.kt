@@ -17,9 +17,12 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import com.example.jetpacktaskmanagement.screen.TaskAdd
 import com.example.jetpacktaskmanagement.screen.TaskAddScreen
+import com.example.jetpacktaskmanagement.screen.TaskDetail
+import com.example.jetpacktaskmanagement.screen.TaskDetailScreen
 import com.example.jetpacktaskmanagement.screen.TaskList
 import com.example.jetpacktaskmanagement.screen.TaskListScreen
 import com.example.jetpacktaskmanagement.ui.theme.JetpackTaskManagementTheme
+import com.example.jetpacktaskmanagement.viewmodel.TaskDetailViewModel
 import com.example.jetpacktaskmanagement.viewmodel.TaskListViewModel
 
 class MainActivity : ComponentActivity() {
@@ -28,15 +31,19 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             JetpackTaskManagementTheme {
-                val viewModelStoreOwner: ViewModelStoreOwner = checkNotNull(LocalViewModelStoreOwner.current)
+                val viewModelStoreOwner: ViewModelStoreOwner =
+                    checkNotNull(LocalViewModelStoreOwner.current)
                 val viewModel: TaskListViewModel = viewModel(
                     factory = TaskListViewModel.provideFactory(),
-                    extras = MutableCreationExtras(if(viewModelStoreOwner is HasDefaultViewModelProviderFactory) {
-                        viewModelStoreOwner.defaultViewModelCreationExtras
-                    } else {
-                        CreationExtras.Empty
-                    }).apply {
-                        this[TaskListViewModel.REPOSITORY_KEY] = TaskListViewModel.taskListRepository
+                    extras = MutableCreationExtras(
+                        if (viewModelStoreOwner is HasDefaultViewModelProviderFactory) {
+                            viewModelStoreOwner.defaultViewModelCreationExtras
+                        } else {
+                            CreationExtras.Empty
+                        }
+                    ).apply {
+                        this[TaskListViewModel.REPOSITORY_KEY] =
+                            TaskListViewModel.taskListRepository
                     }
                 )
 
@@ -61,15 +68,29 @@ fun JetpackTaskManagementApp(viewModel: TaskListViewModel) {
                         viewModel = viewModel,
                         onAddTask = {
                             backStack.add(TaskAdd)
+                        },
+                        onDetail = { taskId ->
+                            backStack.add(TaskDetail(taskId))
                         }
                     )
                 }
+
                 is TaskAdd -> NavEntry(key) {
                     TaskAddScreen(
                         viewModel = viewModel,
                         onBack = { backStack.removeLastOrNull() }
                     )
                 }
+
+                is TaskDetail -> NavEntry(key) {
+                    val viewModel: TaskDetailViewModel = viewModel(
+                        factory = TaskDetailViewModel.provideFactory(key.detailId),
+                    )
+                    TaskDetailScreen(viewModel, onBack = {
+                        backStack.removeLastOrNull()
+                    })
+                }
+
                 else -> NavEntry(Unit) { }
             }
         }

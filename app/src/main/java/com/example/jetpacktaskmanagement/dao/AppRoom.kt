@@ -9,7 +9,9 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.jetpacktaskmanagement.entity.Tag
 import com.example.jetpacktaskmanagement.entity.Task
+import com.example.jetpacktaskmanagement.entity.TaskWithTagCrossRef
 import com.example.jetpacktaskmanagement.entity.User
 import com.example.jetpacktaskmanagement.repository.TaskListRepository
 import kotlinx.coroutines.CoroutineScope
@@ -20,9 +22,13 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 @Database(
-    entities = [User::class, Task::class],
-    version = 4,
-    autoMigrations = [AutoMigration(from = 1, to = 2)]
+    entities = [User::class, Task::class, Tag::class, TaskWithTagCrossRef::class],
+    version = 6,
+    autoMigrations = [
+        AutoMigration(from = 1, to = 2),
+        AutoMigration(from = 4, to = 5),
+        AutoMigration(from = 5, to = 6),
+    ]
 )
 abstract class AppRoom : RoomDatabase() {
 
@@ -30,10 +36,11 @@ abstract class AppRoom : RoomDatabase() {
 
     abstract fun taskDao(): TaskDao
 
+
     companion object {
         @Volatile
         private var _INSTANCE: AppRoom? = null
-        
+
         private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
         fun getDatabase(context: Context): AppRoom {
@@ -56,12 +63,12 @@ abstract class AppRoom : RoomDatabase() {
                     .build().also { _INSTANCE = it }
             }
         }
-        
+
         private suspend fun populateDatabase(userDao: UserDao, taskDao: TaskDao) {
             val repository = TaskListRepository()
             val users = repository.generateUsers()
             val tasks = repository.generateTasks()
-            
+
             userDao.insertAll(users)
             taskDao.saveTasks(tasks)
         }
@@ -119,7 +126,7 @@ abstract class AppRoom : RoomDatabase() {
                     "Frank", "Grace", "Heidi", "Ivan", "Judy"
                 )
                 val genders = listOf(0, 1, 2) // UNSPECIFIED, MALE, FEMALE
-                
+
                 // Check if users table exists and has any users
                 val userCursor = db.query("SELECT COUNT(*) FROM users")
                 var userCount = 0
@@ -127,7 +134,7 @@ abstract class AppRoom : RoomDatabase() {
                     userCount = userCursor.getInt(0)
                 }
                 userCursor.close()
-                
+
                 // If no users exist, create 10 default users
                 if (userCount == 0) {
                     for (i in 0 until 10) {
@@ -138,7 +145,7 @@ abstract class AppRoom : RoomDatabase() {
                         db.insert("users", SQLiteDatabase.CONFLICT_IGNORE, values)
                     }
                 }
-                
+
                 // 2. Create a temporary table with the new schema including foreign key and index
                 db.execSQL(
                     """
@@ -152,7 +159,7 @@ abstract class AppRoom : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
-                
+
                 // Create index on userId
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_tasks_temp_userId` ON `tasks_temp` (`userId`)")
 

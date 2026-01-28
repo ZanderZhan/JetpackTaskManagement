@@ -68,6 +68,7 @@ data object TaskList : NavKey
 fun TaskListScreen(
     viewModel: TaskListViewModel,
     onAddTask: () -> Unit,
+    onDetail: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.observeAsState(UIState.Loading)
@@ -159,6 +160,7 @@ fun TaskListScreen(
                             items(userWithTasks?.tasks ?: emptyList()) { task ->
                                 TaskItem(
                                     task = task,
+                                    onClick = { onDetail(task.id) },
                                     onToggle = { viewModel.toggleTask(task) },
                                     onDelete = { taskToDelete = task }
                                 )
@@ -236,6 +238,7 @@ fun TaskListScreen(
 @Composable
 fun TaskItem(
     task: Task,
+    onClick: (Int) -> Unit,
     onToggle: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
@@ -246,8 +249,8 @@ fun TaskItem(
         modifier = modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = onToggle,
-                onLongClick = onDelete
+                onClick = { onClick.invoke(task.id) },
+                onLongClick = onDelete,
             )
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
