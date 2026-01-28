@@ -17,7 +17,6 @@ class TaskDetailViewModel(
 
     val task: LiveData<TaskWithTags> = _task
 
-
     companion object {
 
         fun provideFactory(taskId: Int): ViewModelProvider.Factory =

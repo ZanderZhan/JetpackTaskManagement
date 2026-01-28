@@ -37,6 +37,7 @@ abstract class AppRoom : RoomDatabase() {
 
     abstract fun taskDao(): TaskDao
 
+    abstract fun tagDao(): TagDao
 
     companion object {
         @Volatile

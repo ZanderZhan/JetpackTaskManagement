@@ -15,6 +15,8 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
+import com.example.jetpacktaskmanagement.screen.TagKey
+import com.example.jetpacktaskmanagement.screen.TagScreen
 import com.example.jetpacktaskmanagement.screen.TaskAdd
 import com.example.jetpacktaskmanagement.screen.TaskAddScreen
 import com.example.jetpacktaskmanagement.screen.TaskDetail
@@ -22,6 +24,7 @@ import com.example.jetpacktaskmanagement.screen.TaskDetailScreen
 import com.example.jetpacktaskmanagement.screen.TaskList
 import com.example.jetpacktaskmanagement.screen.TaskListScreen
 import com.example.jetpacktaskmanagement.ui.theme.JetpackTaskManagementTheme
+import com.example.jetpacktaskmanagement.viewmodel.TagViewModel
 import com.example.jetpacktaskmanagement.viewmodel.TaskDetailViewModel
 import com.example.jetpacktaskmanagement.viewmodel.TaskListViewModel
 
@@ -88,7 +91,19 @@ fun JetpackTaskManagementApp(viewModel: TaskListViewModel) {
                     )
                     TaskDetailScreen(viewModel, onBack = {
                         backStack.removeLastOrNull()
+                    }, onTag = { tagId ->
+                        backStack.add(TagKey(tagId))
                     })
+                }
+
+                is TagKey -> NavEntry(key) {
+                    val viewModel: TagViewModel = viewModel(
+                        factory = TagViewModel.provideFactory(key.tagId),
+                    )
+                    TagScreen(viewModel, onBack = {
+                        backStack.removeLastOrNull()
+                    })
+
                 }
 
                 else -> NavEntry(Unit) { }
