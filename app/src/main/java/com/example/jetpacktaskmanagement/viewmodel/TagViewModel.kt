@@ -1,17 +1,20 @@
 package com.example.jetpacktaskmanagement.viewmodel
 
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.example.jetpacktaskmanagement.TaskApplication
 import com.example.jetpacktaskmanagement.dao.TagDao
+import com.example.jetpacktaskmanagement.entity.Tag
+import com.example.jetpacktaskmanagement.entity.Task
 
 class TagViewModel(
     private val tagId: Int,
     private val tagDao: TagDao,
 ) : ViewModel() {
 
-    val tagWithTasks = tagDao.getTagWithTasks(tagId)
+    val tagWithTasks: LiveData<Map<Tag, List<Task>>> = tagDao.getTagWithTasks(tagId)
 
     companion object {
         fun provideFactory(
