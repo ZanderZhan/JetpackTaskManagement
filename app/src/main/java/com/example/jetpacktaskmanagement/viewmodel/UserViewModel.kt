@@ -6,11 +6,13 @@ import androidx.lifecycle.ViewModel
 import com.example.jetpacktaskmanagement.dao.UserDao
 import com.example.jetpacktaskmanagement.entity.User
 
-abstract class UserViewModel(private val userDao: UserDao) : ViewModel() {
+open class UserViewModel(private val userDao: UserDao) : ViewModel() {
 
     private val _users = userDao.getAllUsers()
 
     private val _currentUser = MediatorLiveData<User?>()
+    
+    private var isUserExplicitlySelected: Boolean = false
 
     val currentUser: LiveData<User?> = _currentUser
     
@@ -18,13 +20,14 @@ abstract class UserViewModel(private val userDao: UserDao) : ViewModel() {
 
     init {
         _currentUser.addSource(_users) { users ->
-            if (_currentUser.value == null) {
+            if (!isUserExplicitlySelected && _currentUser.value == null) {
                 _currentUser.value = users.firstOrNull()
             }
         }
     }
 
     fun switchToUser(user: User) {
+        isUserExplicitlySelected = true
         _currentUser.value = user
     }
 }

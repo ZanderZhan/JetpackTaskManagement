@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,6 +19,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
@@ -25,6 +27,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -42,6 +45,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
@@ -85,11 +91,13 @@ fun TaskListScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                modifier = Modifier.clickable(onClick = {
-                    showUserDialog = true
-                }),
                 title = {
                     Text(text = "Tasks for ${currentUser?.name ?: "Guest"}")
+                },
+                actions = {
+                    IconButton(onClick = { showUserDialog = true }) {
+                        Icon(Icons.Default.Person, contentDescription = "Switch User")
+                    }
                 }
             )
         },
@@ -197,7 +205,9 @@ fun TaskListScreen(
                 onDismissRequest = { showUserDialog = false },
                 title = { Text("Switch User") },
                 text = {
-                    LazyColumn {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 400.dp)
+                    ) {
                         items(allUsers) { user ->
                             Text(
                                 text = user.name,
@@ -208,6 +218,7 @@ fun TaskListScreen(
                                         viewModel.switchToUser(user)
                                         showUserDialog = false
                                     }
+                                    .semantics { role = Role.Button }
                                     .padding(16.dp)
                             )
                         }
@@ -229,6 +240,8 @@ fun TaskItem(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dateFormatter = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+    
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -253,7 +266,7 @@ fun TaskItem(
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(
-                text = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(task.date)),
+                text = dateFormatter.format(Date(task.date)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

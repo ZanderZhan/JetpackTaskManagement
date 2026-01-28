@@ -14,7 +14,6 @@ class TaskListRepository() {
     }
 
     suspend fun getNetworkTasks(): List<Task> {
-        delay(5000)
         return listOf(
 //            Task(0, userId = (0..9).random(),false, "Network: Buy groceries", getRandomDate()),
 //            Task(0,  (0..9).random(),true, "Network: Finish project proposal", getRandomDate()),
@@ -31,7 +30,7 @@ class TaskListRepository() {
             "Clean the house",
             "Pay bills",
             "Work on side project",
-            "Mediate",
+            "Meditate",
             "Cook dinner",
             "Walk the dog",
             "Study for exam",
@@ -47,7 +46,7 @@ class TaskListRepository() {
         return List(20) { index ->
             Task(
                 id = 0,
-                userId = (0..9).random(),
+                userId = (1..10).random(),
                 checked = (0..1).random() == 1,
                 description = descriptions.getOrElse(index) { "Task $index" },
                 date = getRandomDate()
