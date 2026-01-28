@@ -21,6 +21,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
+import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.viewmodel.TagViewModel
 import kotlinx.serialization.Serializable
 
@@ -34,8 +35,8 @@ fun TagScreen(
     onBack: () -> Unit = {}
 ) {
     val tagWithTasks by viewModel.tagWithTasks.observeAsState()
-    val tag = tagWithTasks?.keys?.firstOrNull()
-    val tasks = tagWithTasks?.values?.firstOrNull() ?: emptyList()
+    val tag = tagWithTasks?.tag
+    val tasks = tagWithTasks?.tasks ?: emptyList()
 
     Scaffold(
         topBar = {
