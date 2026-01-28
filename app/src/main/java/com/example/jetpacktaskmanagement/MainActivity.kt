@@ -30,7 +30,6 @@ import com.example.jetpacktaskmanagement.viewmodel.TaskDetailViewModel
 import com.example.jetpacktaskmanagement.viewmodel.TaskListViewModel
 
 class MainActivity : ComponentActivity() {
-    val theme = "theme"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
