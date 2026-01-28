@@ -12,6 +12,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.jetpacktaskmanagement.TaskApplication
+import com.example.jetpacktaskmanagement.ThemeDataStore
 import com.example.jetpacktaskmanagement.dao.TaskDao
 import com.example.jetpacktaskmanagement.dao.UserDao
 import com.example.jetpacktaskmanagement.entity.Task
@@ -20,6 +21,7 @@ import com.example.jetpacktaskmanagement.model.IUiState
 import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.model.UiStateViewModel
 import com.example.jetpacktaskmanagement.repository.TaskListRepository
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 
@@ -28,6 +30,7 @@ class TaskListViewModel(
     private val userDao: UserDao,
     private val savedStateHandle: SavedStateHandle,
     private val repository: TaskListRepository,
+    private val themeDataStore: ThemeDataStore,
     uiStateViewModel: IUiState = UiStateViewModel(UIState.Loading)
 ) : IUiState by uiStateViewModel, UserViewModel(userDao) {
 
@@ -113,6 +116,13 @@ class TaskListViewModel(
         _queryString.value = query
     }
 
+    fun toggleTheme() {
+        viewModelScope.launch {
+            val currentTheme = themeDataStore.isDarkTheme.first()
+            themeDataStore.setTheme(!currentTheme)
+        }
+    }
+
     companion object {
         val REPOSITORY_KEY = object : CreationExtras.Key<TaskListRepository> {}
 
@@ -131,7 +141,8 @@ class TaskListViewModel(
                         application.database.taskDao(),
                         application.database.userDao(),
                         savedStateHandle,
-                        repository
+                        repository,
+                        ThemeDataStore(application)
                     )
                 }
             }

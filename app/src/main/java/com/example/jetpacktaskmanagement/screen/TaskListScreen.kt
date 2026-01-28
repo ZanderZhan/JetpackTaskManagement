@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -96,6 +97,11 @@ fun TaskListScreen(
                     Text(text = "Tasks for ${currentUser?.name ?: "Guest"}")
                 },
                 actions = {
+                    IconButton(onClick = {
+                        viewModel.toggleTheme()
+                    }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Toggle Theme")
+                    }
                     IconButton(onClick = { showUserDialog = true }) {
                         Icon(Icons.Default.Person, contentDescription = "Switch User")
                     }

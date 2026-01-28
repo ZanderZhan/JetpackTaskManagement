@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.HasDefaultViewModelProviderFactory
@@ -29,11 +30,17 @@ import com.example.jetpacktaskmanagement.viewmodel.TaskDetailViewModel
 import com.example.jetpacktaskmanagement.viewmodel.TaskListViewModel
 
 class MainActivity : ComponentActivity() {
+    val theme = "theme"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val themeDataStore = ThemeDataStore(application)
         setContent {
-            JetpackTaskManagementTheme {
+            val darkTheme = themeDataStore.isDarkTheme
+                .collectAsState(false)
+            JetpackTaskManagementTheme(
+                darkTheme = darkTheme.value
+            ) {
                 val viewModelStoreOwner: ViewModelStoreOwner =
                     checkNotNull(LocalViewModelStoreOwner.current)
                 val viewModel: TaskListViewModel = viewModel(
