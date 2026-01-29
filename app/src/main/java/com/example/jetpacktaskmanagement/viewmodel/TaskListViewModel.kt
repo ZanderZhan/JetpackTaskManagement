@@ -14,32 +14,33 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.jetpacktaskmanagement.TaskApplication
 import com.example.jetpacktaskmanagement.ThemeDataStore
 import com.example.jetpacktaskmanagement.dao.TaskDao
-import com.example.jetpacktaskmanagement.dao.UserDao
 import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.entity.UserWithTasks
 import com.example.jetpacktaskmanagement.model.IUiState
 import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.model.UiStateViewModel
+import com.example.jetpacktaskmanagement.repository.RetrofitClient
 import com.example.jetpacktaskmanagement.repository.TaskListRepository
+import com.example.jetpacktaskmanagement.repository.UserRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 
 class TaskListViewModel(
     private val taskDao: TaskDao,
-    private val userDao: UserDao,
     private val savedStateHandle: SavedStateHandle,
     private val repository: TaskListRepository,
+    private val userRepository: UserRepository,
     private val themeDataStore: ThemeDataStore,
     uiStateViewModel: IUiState = UiStateViewModel(UIState.Loading)
-) : IUiState by uiStateViewModel, UserViewModel(userDao) {
+) : IUiState by uiStateViewModel, UserViewModel(userRepository) {
 
     private val _queryString = MutableLiveData(savedStateHandle["query"] ?: "")
     val queryString: LiveData<String> = _queryString
 
     private var _userWithTasks: LiveData<UserWithTasks?> = currentUser.switchMap { user ->
         if (user != null) {
-            userDao.getSpecificUserWithTasks(user.id)
+            userRepository.getSpecificUserWithTasks(user.id)
         } else {
             MutableLiveData(null)
         }
@@ -131,17 +132,18 @@ class TaskListViewModel(
         fun provideFactory(): ViewModelProvider.Factory {
             return viewModelFactory {
                 initializer {
-                    this.get(REPOSITORY_KEY)
                     val repository = this[REPOSITORY_KEY]
                         ?: throw IllegalArgumentException("Repository not provided in extras")
                     val application =
                         this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as TaskApplication
                     val savedStateHandle = createSavedStateHandle()
+                    val userRepository =
+                        UserRepository(RetrofitClient.userService, application.database.userDao())
                     TaskListViewModel(
                         application.database.taskDao(),
-                        application.database.userDao(),
                         savedStateHandle,
                         repository,
+                        userRepository,
                         ThemeDataStore(application)
                     )
                 }
