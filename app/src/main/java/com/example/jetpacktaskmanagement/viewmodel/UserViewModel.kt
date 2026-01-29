@@ -34,8 +34,7 @@ open class UserViewModel(private val userRepository: UserRepository) : ViewModel
         viewModelScope.launch {
             val result = userRepository.refreshUsers()
             if (result.isFailure) {
-                // Handle error
-                result.exceptionOrNull()?.printStackTrace()
+                // Handle error (repository is responsible for logging)
             }
         }
     }
