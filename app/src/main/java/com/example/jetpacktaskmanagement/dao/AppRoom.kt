@@ -13,23 +13,23 @@ import com.example.jetpacktaskmanagement.entity.Tag
 import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.entity.TaskWithTagCrossRef
 import com.example.jetpacktaskmanagement.entity.User
-import com.example.jetpacktaskmanagement.repository.TaskListRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 @Database(
     entities = [User::class, Task::class, Tag::class, TaskWithTagCrossRef::class],
-    version = 8,
+    version = 10,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 4, to = 5),
         AutoMigration(from = 5, to = 6),
         AutoMigration(from = 6, to = 7),
         AutoMigration(from = 7, to = 8),
+        AutoMigration(from = 8, to = 9),
+        AutoMigration(from = 9, to = 10),
     ]
 )
 abstract class AppRoom : RoomDatabase() {
@@ -52,28 +52,8 @@ abstract class AppRoom : RoomDatabase() {
                     context.applicationContext, AppRoom::class.java, "task_database"
                 )
                     .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
-                    .addCallback(object : Callback() {
-                        override fun onCreate(db: SupportSQLiteDatabase) {
-                            super.onCreate(db)
-                            // Populate database with initial users and tasks
-                            _INSTANCE?.let { database ->
-                                applicationScope.launch {
-                                    populateDatabase(database.userDao(), database.taskDao())
-                                }
-                            }
-                        }
-                    })
                     .build().also { _INSTANCE = it }
             }
-        }
-
-        private suspend fun populateDatabase(userDao: UserDao, taskDao: TaskDao) {
-            val repository = TaskListRepository()
-            val users = repository.generateUsers()
-            val tasks = repository.generateTasks()
-
-            userDao.insertAll(users)
-            taskDao.saveTasks(tasks)
         }
 
         private val MIGRATION_2_3 = object : Migration(2, 3) {

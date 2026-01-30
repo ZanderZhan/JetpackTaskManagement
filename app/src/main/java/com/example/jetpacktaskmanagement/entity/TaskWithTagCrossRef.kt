@@ -8,8 +8,8 @@ import androidx.room.Index
     tableName = "task_tag_cross_ref",
     primaryKeys = ["taskId", "tagId"],
     foreignKeys = [
-        ForeignKey(entity = Task::class, parentColumns = ["id"], childColumns = ["taskId"], onDelete = ForeignKey.CASCADE),
-        ForeignKey(entity = Tag::class, parentColumns = ["id"], childColumns = ["tagId"], onDelete = ForeignKey.CASCADE)
+        ForeignKey(entity = Task::class, parentColumns = ["id"], childColumns = ["taskId"]),
+        ForeignKey(entity = Tag::class, parentColumns = ["id"], childColumns = ["tagId"])
     ],
     indices = [Index(value = ["tagId"])]
 )

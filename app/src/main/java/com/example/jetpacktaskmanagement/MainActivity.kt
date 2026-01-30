@@ -50,10 +50,7 @@ class MainActivity : ComponentActivity() {
                         } else {
                             CreationExtras.Empty
                         }
-                    ).apply {
-                        this[TaskListViewModel.REPOSITORY_KEY] =
-                            TaskListViewModel.taskListRepository
-                    }
+                    )
                 )
 
                 JetpackTaskManagementApp(viewModel)

@@ -8,7 +8,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.jetpacktaskmanagement.TaskApplication
@@ -20,7 +19,7 @@ import com.example.jetpacktaskmanagement.model.IUiState
 import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.model.UiStateViewModel
 import com.example.jetpacktaskmanagement.repository.RetrofitClient
-import com.example.jetpacktaskmanagement.repository.TaskListRepository
+import com.example.jetpacktaskmanagement.repository.TaskRepository
 import com.example.jetpacktaskmanagement.repository.UserRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -29,7 +28,7 @@ import kotlinx.coroutines.launch
 class TaskListViewModel(
     private val taskDao: TaskDao,
     private val savedStateHandle: SavedStateHandle,
-    private val repository: TaskListRepository,
+    private val repository: TaskRepository,
     private val userRepository: UserRepository,
     private val themeDataStore: ThemeDataStore,
     uiStateViewModel: IUiState = UiStateViewModel(UIState.Loading)
@@ -40,6 +39,9 @@ class TaskListViewModel(
 
     private var _userWithTasks: LiveData<UserWithTasks?> = currentUser.switchMap { user ->
         if (user != null) {
+            viewModelScope.launch {
+                repository.refreshUserTasks(user.id)
+            }
             userRepository.getSpecificUserWithTasks(user.id)
         } else {
             MutableLiveData(null)
@@ -72,11 +74,6 @@ class TaskListViewModel(
     }
 
     init {
-        viewModelScope.launch {
-            var tasks = repository.getNetworkTasks()
-            taskDao.saveTasks(tasks)
-        }
-
         uiStateViewModel.addSource(userWithTasks) { userWithTasks ->
             when (userWithTasks) {
                 null -> UIState.Loading
@@ -125,24 +122,20 @@ class TaskListViewModel(
     }
 
     companion object {
-        val REPOSITORY_KEY = object : CreationExtras.Key<TaskListRepository> {}
-
-        val taskListRepository = TaskListRepository()
-
         fun provideFactory(): ViewModelProvider.Factory {
             return viewModelFactory {
                 initializer {
-                    val repository = this[REPOSITORY_KEY]
-                        ?: throw IllegalArgumentException("Repository not provided in extras")
                     val application =
                         this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as TaskApplication
                     val savedStateHandle = createSavedStateHandle()
                     val userRepository =
                         UserRepository(RetrofitClient.userService, application.database.userDao())
+                    val taskRepository =
+                        TaskRepository(RetrofitClient.taskService, application.database.taskDao())
                     TaskListViewModel(
                         application.database.taskDao(),
                         savedStateHandle,
-                        repository,
+                        taskRepository,
                         userRepository,
                         ThemeDataStore(application)
                     )
