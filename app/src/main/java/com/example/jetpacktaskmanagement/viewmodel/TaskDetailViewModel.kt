@@ -1,5 +1,6 @@
 package com.example.jetpacktaskmanagement.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -52,7 +53,7 @@ class TaskDetailViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             val result = tagRepository.refreshTags(taskId)
             result.onFailure { throwable ->
-                android.util.Log.e(TAG, "Failed to refresh tags", throwable)
+                Log.e(TAG, "Failed to refresh tags", throwable)
             }
         }
     }

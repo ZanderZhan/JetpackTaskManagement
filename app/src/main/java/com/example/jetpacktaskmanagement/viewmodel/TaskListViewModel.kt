@@ -1,5 +1,6 @@
 package com.example.jetpacktaskmanagement.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
@@ -42,7 +43,7 @@ class TaskListViewModel(
             viewModelScope.launch {
                 val result = repository.refreshUserTasks(user.id)
                 result.onFailure { throwable ->
-                    android.util.Log.e(TAG, "Failed to refresh user tasks", throwable)
+                    Log.e(TAG, "Failed to refresh user tasks", throwable)
                 }
             }
             userRepository.getSpecificUserWithTasks(user.id)
