@@ -29,7 +29,6 @@ import java.util.Locale
         AutoMigration(from = 6, to = 7),
         AutoMigration(from = 7, to = 8),
         AutoMigration(from = 8, to = 9),
-        AutoMigration(from = 9, to = 10),
     ]
 )
 abstract class AppRoom : RoomDatabase() {
@@ -51,7 +50,7 @@ abstract class AppRoom : RoomDatabase() {
                 Room.databaseBuilder(
                     context.applicationContext, AppRoom::class.java, "task_database"
                 )
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_9_10)
                     .build().also { _INSTANCE = it }
             }
         }
@@ -172,6 +171,61 @@ abstract class AppRoom : RoomDatabase() {
                 cursor.close()
 
                 // 4. Swap tables
+                db.execSQL("DROP TABLE tasks")
+                db.execSQL("ALTER TABLE tasks_temp RENAME TO tasks")
+            }
+        }
+
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Migration from version 9 to 10 handles:
+                // 1. Changing task_tag_cross_ref foreign key constraints from CASCADE to NO ACTION
+                // 2. Changing tasks table primary key from non-autoGenerate to autoGenerate
+                
+                // Step 1: Recreate task_tag_cross_ref table with NO ACTION foreign keys
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `task_tag_cross_ref_temp` (
+                        `taskId` INTEGER NOT NULL,
+                        `tagId` INTEGER NOT NULL,
+                        PRIMARY KEY(`taskId`, `tagId`),
+                        FOREIGN KEY(`taskId`) REFERENCES `tasks`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
+                        FOREIGN KEY(`tagId`) REFERENCES `tags`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+                    )
+                    """.trimIndent()
+                )
+                
+                // Create index on tagId
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_task_tag_cross_ref_temp_tagId` ON `task_tag_cross_ref_temp` (`tagId`)")
+                
+                // Copy data from old table
+                db.execSQL("INSERT INTO task_tag_cross_ref_temp SELECT taskId, tagId FROM task_tag_cross_ref")
+                
+                // Drop old table and rename temp table
+                db.execSQL("DROP TABLE task_tag_cross_ref")
+                db.execSQL("ALTER TABLE task_tag_cross_ref_temp RENAME TO task_tag_cross_ref")
+                
+                // Step 2: Recreate tasks table with autoGenerate primary key
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `tasks_temp` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `userId` INTEGER NOT NULL,
+                        `checked` INTEGER NOT NULL,
+                        `description` TEXT NOT NULL,
+                        `date` INTEGER NOT NULL,
+                        FOREIGN KEY(`userId`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                
+                // Create index on userId
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_tasks_temp_userId` ON `tasks_temp` (`userId`)")
+                
+                // Copy data from old table
+                db.execSQL("INSERT INTO tasks_temp SELECT id, userId, checked, description, date FROM tasks")
+                
+                // Drop old table and rename temp table
                 db.execSQL("DROP TABLE tasks")
                 db.execSQL("ALTER TABLE tasks_temp RENAME TO tasks")
             }

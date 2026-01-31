@@ -25,7 +25,10 @@ class TaskDetailViewModel(
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            tagRepository.refreshTags(taskId)
+            val result = tagRepository.refreshTags(taskId)
+            result.onFailure { throwable ->
+                android.util.Log.e("TaskDetailViewModel", "Failed to refresh tags", throwable)
+            }
         }
     }
 

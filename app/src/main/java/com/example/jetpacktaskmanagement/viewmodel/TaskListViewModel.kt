@@ -40,7 +40,10 @@ class TaskListViewModel(
     private var _userWithTasks: LiveData<UserWithTasks?> = currentUser.switchMap { user ->
         if (user != null) {
             viewModelScope.launch {
-                repository.refreshUserTasks(user.id)
+                val result = repository.refreshUserTasks(user.id)
+                result.onFailure { throwable ->
+                    android.util.Log.e("TaskListViewModel", "Failed to refresh user tasks", throwable)
+                }
             }
             userRepository.getSpecificUserWithTasks(user.id)
         } else {

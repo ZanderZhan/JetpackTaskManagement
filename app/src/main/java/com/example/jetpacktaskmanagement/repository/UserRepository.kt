@@ -21,7 +21,7 @@ class UserRepository(private val userService: UserService, private val userDao: 
             Result.success(Unit)
         } catch (e: HttpException) {
             val errorBody = e.response()?.errorBody()?.string()
-            Log.e(TAG, "HTTP U{e.code()}: $errorBody")
+            Log.e(TAG, "HTTP ${e.code()}: $errorBody")
             Result.failure(e)
         } catch (e: Exception) {
             Log.e(TAG, "Error refreshing users", e)

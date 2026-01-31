@@ -1,10 +1,15 @@
 package com.example.jetpacktaskmanagement.repository
 
+import android.util.Log
 import com.example.jetpacktaskmanagement.dao.TagDao
 import com.example.jetpacktaskmanagement.entity.TaskWithTagCrossRef
 import com.example.jetpacktaskmanagement.service.TagService
 
 class TagRepository(private val tagService: TagService, private val tagDao: TagDao) {
+
+    companion object {
+        private const val TAG = "TagRepository"
+    }
 
     fun getTagWithTasks(tagId: Int) = tagDao.getTagWithTasks(tagId)
 
@@ -16,7 +21,7 @@ class TagRepository(private val tagService: TagService, private val tagDao: TagD
             tagDao.saveTaskWithTagCrossRefs(crossRefs)
             Result.success(Unit)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error refreshing tags", e)
             Result.failure(e)
         }
     }
