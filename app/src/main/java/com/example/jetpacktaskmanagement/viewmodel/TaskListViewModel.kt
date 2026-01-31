@@ -42,7 +42,7 @@ class TaskListViewModel(
             viewModelScope.launch {
                 val result = repository.refreshUserTasks(user.id)
                 result.onFailure { throwable ->
-                    android.util.Log.e("TaskListViewModel", "Failed to refresh user tasks", throwable)
+                    android.util.Log.e(TAG, "Failed to refresh user tasks", throwable)
                 }
             }
             userRepository.getSpecificUserWithTasks(user.id)
@@ -125,6 +125,8 @@ class TaskListViewModel(
     }
 
     companion object {
+        private const val TAG = "TaskListViewModel"
+
         fun provideFactory(): ViewModelProvider.Factory {
             return viewModelFactory {
                 initializer {

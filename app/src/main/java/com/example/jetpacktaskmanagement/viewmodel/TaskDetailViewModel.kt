@@ -19,20 +19,8 @@ class TaskDetailViewModel(
     private val taskId: Int,
 ) : ViewModel() {
 
-    private val _task = repository.getTaskWithTags(taskId)
-
-    val task: LiveData<TaskWithTags> = _task
-
-    init {
-        viewModelScope.launch(Dispatchers.IO) {
-            val result = tagRepository.refreshTags(taskId)
-            result.onFailure { throwable ->
-                android.util.Log.e("TaskDetailViewModel", "Failed to refresh tags", throwable)
-            }
-        }
-    }
-
     companion object {
+        private const val TAG = "TaskDetailViewModel"
 
         fun provideFactory(taskId: Int): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
@@ -56,5 +44,17 @@ class TaskDetailViewModel(
 
     }
 
+    private val _task = repository.getTaskWithTags(taskId)
+
+    val task: LiveData<TaskWithTags> = _task
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = tagRepository.refreshTags(taskId)
+            result.onFailure { throwable ->
+                android.util.Log.e(TAG, "Failed to refresh tags", throwable)
+            }
+        }
+    }
 
 }
