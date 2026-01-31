@@ -11,4 +11,8 @@ interface TaskService {
 
     @GET("api/task")
     suspend fun getTask(@Query("id") id: Int): Task
+
+    @GET("api/task/by-tag")
+    suspend fun getTasksByTag(@Query("tagId") tagId: Int): List<Task>
+
 }

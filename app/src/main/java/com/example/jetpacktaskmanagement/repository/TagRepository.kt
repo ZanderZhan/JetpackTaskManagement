@@ -26,4 +26,15 @@ class TagRepository(private val tagService: TagService, private val tagDao: TagD
         }
     }
 
+    suspend fun refreshAllTags(): Result<Unit> {
+        return try {
+            val tags = tagService.getAllTags()
+            tagDao.saveTags(tags)
+            return Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error refreshing tags", e)
+            Result.failure(e)
+        }
+    }
+
 }

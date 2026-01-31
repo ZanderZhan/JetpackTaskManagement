@@ -35,7 +35,11 @@ class TaskDetailViewModel(
                     val application =
                         checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as? TaskApplication)
                     val repository =
-                        TaskRepository(RetrofitClient.taskService, application.database.taskDao())
+                        TaskRepository(
+                            RetrofitClient.taskService,
+                            application.database.taskDao(),
+                            application.database.tagDao()
+                        )
                     val tagRepository =
                         TagRepository(RetrofitClient.tagService, application.database.tagDao())
                     @Suppress("UNCHECKED_CAST")

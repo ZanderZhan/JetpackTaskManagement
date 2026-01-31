@@ -137,7 +137,11 @@ class TaskListViewModel(
                     val userRepository =
                         UserRepository(RetrofitClient.userService, application.database.userDao())
                     val taskRepository =
-                        TaskRepository(RetrofitClient.taskService, application.database.taskDao())
+                        TaskRepository(
+                            RetrofitClient.taskService,
+                            application.database.taskDao(),
+                            application.database.tagDao()
+                        )
                     TaskListViewModel(
                         application.database.taskDao(),
                         savedStateHandle,
