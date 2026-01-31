@@ -179,10 +179,9 @@ abstract class AppRoom : RoomDatabase() {
         private val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Migration from version 9 to 10 handles:
-                // 1. Changing task_tag_cross_ref foreign key constraints from CASCADE to NO ACTION
-                // 2. Changing tasks table primary key from non-autoGenerate to autoGenerate
+                // Changing task_tag_cross_ref foreign key constraints from CASCADE to NO ACTION
                 
-                // Step 1: Recreate task_tag_cross_ref table with NO ACTION foreign keys
+                // Recreate task_tag_cross_ref table with NO ACTION foreign keys
                 db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS `task_tag_cross_ref_temp` (
@@ -204,30 +203,6 @@ abstract class AppRoom : RoomDatabase() {
                 // Drop old table and rename temp table
                 db.execSQL("DROP TABLE task_tag_cross_ref")
                 db.execSQL("ALTER TABLE task_tag_cross_ref_temp RENAME TO task_tag_cross_ref")
-                
-                // Step 2: Recreate tasks table with autoGenerate primary key
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS `tasks_temp` (
-                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        `userId` INTEGER NOT NULL,
-                        `checked` INTEGER NOT NULL,
-                        `description` TEXT NOT NULL,
-                        `date` INTEGER NOT NULL,
-                        FOREIGN KEY(`userId`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
-                    )
-                    """.trimIndent()
-                )
-                
-                // Create index on userId
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_tasks_temp_userId` ON `tasks_temp` (`userId`)")
-                
-                // Copy data from old table
-                db.execSQL("INSERT INTO tasks_temp SELECT id, userId, checked, description, date FROM tasks")
-                
-                // Drop old table and rename temp table
-                db.execSQL("DROP TABLE tasks")
-                db.execSQL("ALTER TABLE tasks_temp RENAME TO tasks")
             }
         }
     }

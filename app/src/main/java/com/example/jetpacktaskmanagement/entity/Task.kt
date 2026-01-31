@@ -19,7 +19,7 @@ import androidx.room.PrimaryKey
     indices = [Index(value = ["userId"])]
 )
 data class Task(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey val id: Int,
     @ColumnInfo val userId: Int,
     @ColumnInfo val checked: Boolean,
     @ColumnInfo val description: String,
