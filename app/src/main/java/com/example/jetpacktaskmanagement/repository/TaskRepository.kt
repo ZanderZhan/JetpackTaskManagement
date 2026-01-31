@@ -35,11 +35,13 @@ class TaskRepository(
         return try {
             val tasks = service.getTasksByTag(tagId)
             taskDao.saveTasks(tasks)
+            // Remove existing cross-refs for this tag to avoid stale associations
+            tagDao.deleteTaskWithTagCrossRefsByTagId(tagId)
             val crossRefs = tasks.map { TaskWithTagCrossRef(it.id, tagId) }
             tagDao.saveTaskWithTagCrossRefs(crossRefs)
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Error refreshing tasks by tag", e)
+            Log.e(TAG, "Error refreshing tasks by tagId: $tagId", e)
             Result.failure(e)
         }
     }

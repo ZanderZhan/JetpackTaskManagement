@@ -1,5 +1,6 @@
 package com.example.jetpacktaskmanagement.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -19,15 +20,9 @@ class TagViewModel(
     private val taskRepository: TaskRepository,
 ) : ViewModel() {
 
-    val tagWithTasks: LiveData<Map<Tag, List<Task>>> = repository.getTagWithTasks(tagId)
-
-    init {
-        viewModelScope.launch {
-            taskRepository.refreshTasksByTagId(tagId)
-        }
-    }
-
     companion object {
+        private const val TAG = "TagViewModel"
+
         fun provideFactory(
             tagId: Int
         ): ViewModelProvider.Factory {
@@ -55,4 +50,16 @@ class TagViewModel(
             }
         }
     }
+
+    val tagWithTasks: LiveData<Map<Tag, List<Task>>> = repository.getTagWithTasks(tagId)
+
+    init {
+        viewModelScope.launch {
+            val result = taskRepository.refreshTasksByTagId(tagId)
+            result.onFailure { throwable ->
+                Log.e(TAG, "Failed to refresh tasks by tag", throwable)
+            }
+        }
+    }
+
 }

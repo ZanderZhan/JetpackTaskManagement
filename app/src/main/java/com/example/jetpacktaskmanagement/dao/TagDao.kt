@@ -26,4 +26,7 @@ interface TagDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveTaskWithTagCrossRefs(crossRefs: List<TaskWithTagCrossRef>)
 
+    @Query("DELETE FROM task_tag_cross_ref WHERE tagId = :tagId")
+    suspend fun deleteTaskWithTagCrossRefsByTagId(tagId: Int)
+
 }
