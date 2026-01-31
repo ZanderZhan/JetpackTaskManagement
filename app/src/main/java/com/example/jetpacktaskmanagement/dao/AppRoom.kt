@@ -13,23 +13,22 @@ import com.example.jetpacktaskmanagement.entity.Tag
 import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.entity.TaskWithTagCrossRef
 import com.example.jetpacktaskmanagement.entity.User
-import com.example.jetpacktaskmanagement.repository.TaskListRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 @Database(
     entities = [User::class, Task::class, Tag::class, TaskWithTagCrossRef::class],
-    version = 8,
+    version = 10,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 4, to = 5),
         AutoMigration(from = 5, to = 6),
         AutoMigration(from = 6, to = 7),
         AutoMigration(from = 7, to = 8),
+        AutoMigration(from = 8, to = 9),
     ]
 )
 abstract class AppRoom : RoomDatabase() {
@@ -51,29 +50,9 @@ abstract class AppRoom : RoomDatabase() {
                 Room.databaseBuilder(
                     context.applicationContext, AppRoom::class.java, "task_database"
                 )
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
-                    .addCallback(object : Callback() {
-                        override fun onCreate(db: SupportSQLiteDatabase) {
-                            super.onCreate(db)
-                            // Populate database with initial users and tasks
-                            _INSTANCE?.let { database ->
-                                applicationScope.launch {
-                                    populateDatabase(database.userDao(), database.taskDao())
-                                }
-                            }
-                        }
-                    })
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_9_10)
                     .build().also { _INSTANCE = it }
             }
-        }
-
-        private suspend fun populateDatabase(userDao: UserDao, taskDao: TaskDao) {
-            val repository = TaskListRepository()
-            val users = repository.generateUsers()
-            val tasks = repository.generateTasks()
-
-            userDao.insertAll(users)
-            taskDao.saveTasks(tasks)
         }
 
         private val MIGRATION_2_3 = object : Migration(2, 3) {
@@ -194,6 +173,36 @@ abstract class AppRoom : RoomDatabase() {
                 // 4. Swap tables
                 db.execSQL("DROP TABLE tasks")
                 db.execSQL("ALTER TABLE tasks_temp RENAME TO tasks")
+            }
+        }
+
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Migration from version 9 to 10 handles:
+                // Changing task_tag_cross_ref foreign key constraints from CASCADE to NO ACTION
+                
+                // Recreate task_tag_cross_ref table with NO ACTION foreign keys
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `task_tag_cross_ref_temp` (
+                        `taskId` INTEGER NOT NULL,
+                        `tagId` INTEGER NOT NULL,
+                        PRIMARY KEY(`taskId`, `tagId`),
+                        FOREIGN KEY(`taskId`) REFERENCES `tasks`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
+                        FOREIGN KEY(`tagId`) REFERENCES `tags`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+                    )
+                    """.trimIndent()
+                )
+                
+                // Create index on tagId
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_task_tag_cross_ref_temp_tagId` ON `task_tag_cross_ref_temp` (`tagId`)")
+                
+                // Copy data from old table
+                db.execSQL("INSERT INTO task_tag_cross_ref_temp SELECT taskId, tagId FROM task_tag_cross_ref")
+                
+                // Drop old table and rename temp table
+                db.execSQL("DROP TABLE task_tag_cross_ref")
+                db.execSQL("ALTER TABLE task_tag_cross_ref_temp RENAME TO task_tag_cross_ref")
             }
         }
     }

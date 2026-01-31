@@ -18,6 +18,9 @@ interface TaskDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveTasks(tasks: List<Task>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun saveTask(task: Task)
+
     @Delete
     suspend fun deleteTask(task: Task)
 

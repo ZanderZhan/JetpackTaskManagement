@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
     tableName = "tags",
 )
 data class Tag(
-    @PrimaryKey(autoGenerate = true) val id: Int,
+    @PrimaryKey val id: Int,
     @ColumnInfo val name: String,
     @ColumnInfo val priority: TagPriority,
 )
