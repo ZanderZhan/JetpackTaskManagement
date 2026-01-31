@@ -1,22 +1,28 @@
 package com.example.jetpacktaskmanagement.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.example.jetpacktaskmanagement.TaskApplication
-import com.example.jetpacktaskmanagement.dao.TagDao
 import com.example.jetpacktaskmanagement.entity.Tag
 import com.example.jetpacktaskmanagement.entity.Task
+import com.example.jetpacktaskmanagement.repository.RetrofitClient
+import com.example.jetpacktaskmanagement.repository.TagRepository
+import com.example.jetpacktaskmanagement.repository.TaskRepository
+import kotlinx.coroutines.launch
 
 class TagViewModel(
     private val tagId: Int,
-    private val tagDao: TagDao,
+    private val repository: TagRepository,
+    private val taskRepository: TaskRepository,
 ) : ViewModel() {
 
-    val tagWithTasks: LiveData<Map<Tag, List<Task>>> = tagDao.getTagWithTasks(tagId)
-
     companion object {
+        private const val TAG = "TagViewModel"
+
         fun provideFactory(
             tagId: Int
         ): ViewModelProvider.Factory {
@@ -30,10 +36,30 @@ class TagViewModel(
                     }
                     val application: TaskApplication =
                         checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as? TaskApplication)
+                    val repository =
+                        TagRepository(RetrofitClient.tagService, application.database.tagDao())
+                    val taskRepository =
+                        TaskRepository(
+                            RetrofitClient.taskService,
+                            application.database.taskDao(),
+                            application.database.tagDao()
+                        )
                     @Suppress("UNCHECKED_CAST")
-                    return TagViewModel(tagId, application.database.tagDao()) as T
+                    return TagViewModel(tagId, repository, taskRepository) as T
                 }
             }
         }
     }
+
+    val tagWithTasks: LiveData<Map<Tag, List<Task>>> = repository.getTagWithTasks(tagId)
+
+    init {
+        viewModelScope.launch {
+            val result = taskRepository.refreshTasksByTagId(tagId)
+            result.onFailure { throwable ->
+                Log.e(TAG, "Failed to refresh tasks by tag", throwable)
+            }
+        }
+    }
+
 }
