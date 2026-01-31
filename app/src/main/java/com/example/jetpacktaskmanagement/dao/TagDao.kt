@@ -21,9 +21,9 @@ interface TagDao {
     fun getTagWithTasks(tagId: Int): LiveData<Map<Tag, List<Task>>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun saveTags(tags: List<Tag>)
+    suspend fun saveTags(tags: List<Tag>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun saveTaskWithTagCrossRefs(crossRefs: List<TaskWithTagCrossRef>)
+    suspend fun saveTaskWithTagCrossRefs(crossRefs: List<TaskWithTagCrossRef>)
 
 }

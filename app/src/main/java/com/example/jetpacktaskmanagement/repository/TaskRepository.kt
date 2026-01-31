@@ -1,5 +1,6 @@
 package com.example.jetpacktaskmanagement.repository
 
+import android.util.Log
 import com.example.jetpacktaskmanagement.dao.TaskDao
 import com.example.jetpacktaskmanagement.service.TaskService
 
@@ -8,6 +9,10 @@ class TaskRepository(
     private val service: TaskService,
     private val taskDao: TaskDao,
 ) {
+
+    companion object {
+        private const val TAG = "TaskRepository"
+    }
 
     fun getTaskWithTags(taskId: Int) = taskDao.getTaskWithTags(taskId)
 
@@ -18,7 +23,7 @@ class TaskRepository(
             taskDao.saveTasks(tasks)
             Result.success(Unit)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error refreshing user tasks", e)
             Result.failure(e)
         }
     }
