@@ -7,8 +7,12 @@ import com.example.jetpacktaskmanagement.entity.User
 import com.example.jetpacktaskmanagement.entity.UserWithTasks
 import com.example.jetpacktaskmanagement.service.UserService
 import retrofit2.HttpException
+import javax.inject.Inject
 
-class UserRepository(private val userService: UserService, private val userDao: UserDao) {
+class UserRepository @Inject constructor(
+    private val userService: UserService,
+    private val userDao: UserDao
+) {
 
     companion object {
         private const val TAG = "UserRepository"

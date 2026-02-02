@@ -3,51 +3,30 @@ package com.example.jetpacktaskmanagement.viewmodel
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import com.example.jetpacktaskmanagement.TaskApplication
 import com.example.jetpacktaskmanagement.entity.TaskWithTags
-import com.example.jetpacktaskmanagement.repository.RetrofitClient
 import com.example.jetpacktaskmanagement.repository.TagRepository
 import com.example.jetpacktaskmanagement.repository.TaskRepository
+import com.example.jetpacktaskmanagement.screen.TaskDetail
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class TaskDetailViewModel(
+@HiltViewModel(assistedFactory = TaskDetailViewModel.Factory::class)
+class TaskDetailViewModel @AssistedInject constructor(
     private val repository: TaskRepository,
     private val tagRepository: TagRepository,
-    private val taskId: Int,
+    @Assisted private val taskDetail: TaskDetail,
 ) : ViewModel() {
 
     companion object {
         private const val TAG = "TaskDetailViewModel"
-
-        fun provideFactory(taskId: Int): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(
-                    modelClass: Class<T>,
-                    extras: CreationExtras
-                ): T {
-                    if (!modelClass.isAssignableFrom(TaskDetailViewModel::class.java)) {
-                        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-                    }
-                    val application =
-                        checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as? TaskApplication)
-                    val repository =
-                        TaskRepository(
-                            RetrofitClient.taskService,
-                            application.database.taskDao(),
-                            application.database.tagDao()
-                        )
-                    val tagRepository =
-                        TagRepository(RetrofitClient.tagService, application.database.tagDao())
-                    @Suppress("UNCHECKED_CAST")
-                    return TaskDetailViewModel(repository, tagRepository, taskId) as T
-                }
-            }
-
     }
+
+    private val taskId: Int = taskDetail.taskId
 
     private val _task = repository.getTaskWithTags(taskId)
 
@@ -62,4 +41,8 @@ class TaskDetailViewModel(
         }
     }
 
+    @AssistedFactory
+    interface Factory {
+        fun create(taskDetail: TaskDetail): TaskDetailViewModel
+    }
 }

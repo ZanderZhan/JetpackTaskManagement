@@ -35,7 +35,7 @@ import java.util.Date
 import java.util.Locale
 
 @Serializable
-data class TaskDetail(val detailId: Int) : NavKey
+data class TaskDetail(val taskId: Int) : NavKey
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

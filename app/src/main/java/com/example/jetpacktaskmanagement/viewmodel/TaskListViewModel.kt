@@ -5,13 +5,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import com.example.jetpacktaskmanagement.TaskApplication
 import com.example.jetpacktaskmanagement.ThemeDataStore
 import com.example.jetpacktaskmanagement.dao.TaskDao
 import com.example.jetpacktaskmanagement.entity.Task
@@ -19,14 +14,16 @@ import com.example.jetpacktaskmanagement.entity.UserWithTasks
 import com.example.jetpacktaskmanagement.model.IUiState
 import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.model.UiStateViewModel
-import com.example.jetpacktaskmanagement.repository.RetrofitClient
 import com.example.jetpacktaskmanagement.repository.TaskRepository
 import com.example.jetpacktaskmanagement.repository.UserRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 
-class TaskListViewModel(
+@HiltViewModel
+class TaskListViewModel @Inject constructor(
     private val taskDao: TaskDao,
     private val savedStateHandle: SavedStateHandle,
     private val repository: TaskRepository,
@@ -127,30 +124,5 @@ class TaskListViewModel(
 
     companion object {
         private const val TAG = "TaskListViewModel"
-
-        fun provideFactory(): ViewModelProvider.Factory {
-            return viewModelFactory {
-                initializer {
-                    val application =
-                        this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as TaskApplication
-                    val savedStateHandle = createSavedStateHandle()
-                    val userRepository =
-                        UserRepository(RetrofitClient.userService, application.database.userDao())
-                    val taskRepository =
-                        TaskRepository(
-                            RetrofitClient.taskService,
-                            application.database.taskDao(),
-                            application.database.tagDao()
-                        )
-                    TaskListViewModel(
-                        application.database.taskDao(),
-                        savedStateHandle,
-                        taskRepository,
-                        userRepository,
-                        ThemeDataStore(application)
-                    )
-                }
-            }
-        }
     }
 }
