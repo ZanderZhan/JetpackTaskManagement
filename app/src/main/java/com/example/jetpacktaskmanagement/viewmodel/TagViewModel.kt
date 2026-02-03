@@ -3,53 +3,30 @@ package com.example.jetpacktaskmanagement.viewmodel
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import com.example.jetpacktaskmanagement.TaskApplication
 import com.example.jetpacktaskmanagement.entity.Tag
 import com.example.jetpacktaskmanagement.entity.Task
-import com.example.jetpacktaskmanagement.repository.RetrofitClient
 import com.example.jetpacktaskmanagement.repository.TagRepository
 import com.example.jetpacktaskmanagement.repository.TaskRepository
+import com.example.jetpacktaskmanagement.screen.TagKey
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 
-class TagViewModel(
-    private val tagId: Int,
+@HiltViewModel(assistedFactory = TagViewModel.Factory::class)
+class TagViewModel @AssistedInject constructor(
+    @Assisted private val tagKey: TagKey,
     private val repository: TagRepository,
     private val taskRepository: TaskRepository,
 ) : ViewModel() {
 
     companion object {
         private const val TAG = "TagViewModel"
-
-        fun provideFactory(
-            tagId: Int
-        ): ViewModelProvider.Factory {
-            return object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(
-                    modelClass: Class<T>,
-                    extras: CreationExtras
-                ): T {
-                    if (!modelClass.isAssignableFrom(TagViewModel::class.java)) {
-                        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-                    }
-                    val application: TaskApplication =
-                        checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as? TaskApplication)
-                    val repository =
-                        TagRepository(RetrofitClient.tagService, application.database.tagDao())
-                    val taskRepository =
-                        TaskRepository(
-                            RetrofitClient.taskService,
-                            application.database.taskDao(),
-                            application.database.tagDao()
-                        )
-                    @Suppress("UNCHECKED_CAST")
-                    return TagViewModel(tagId, repository, taskRepository) as T
-                }
-            }
-        }
     }
+
+    private val tagId: Int = tagKey.tagId
 
     val tagWithTasks: LiveData<Map<Tag, List<Task>>> = repository.getTagWithTasks(tagId)
 
@@ -62,4 +39,8 @@ class TagViewModel(
         }
     }
 
+    @AssistedFactory
+    interface Factory {
+        fun create(tagKey: TagKey): TagViewModel
+    }
 }

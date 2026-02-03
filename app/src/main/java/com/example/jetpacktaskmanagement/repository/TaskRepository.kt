@@ -5,9 +5,10 @@ import com.example.jetpacktaskmanagement.dao.TagDao
 import com.example.jetpacktaskmanagement.dao.TaskDao
 import com.example.jetpacktaskmanagement.entity.TaskWithTagCrossRef
 import com.example.jetpacktaskmanagement.service.TaskService
+import javax.inject.Inject
 
 
-class TaskRepository(
+class TaskRepository @Inject constructor(
     private val service: TaskService,
     private val taskDao: TaskDao,
     private val tagDao: TagDao,

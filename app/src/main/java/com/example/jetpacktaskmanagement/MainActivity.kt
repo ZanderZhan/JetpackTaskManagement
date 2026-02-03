@@ -8,13 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.lifecycle.HasDefaultViewModelProviderFactory
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.MutableCreationExtras
-import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.example.jetpacktaskmanagement.screen.TagKey
 import com.example.jetpacktaskmanagement.screen.TagScreen
@@ -28,7 +25,9 @@ import com.example.jetpacktaskmanagement.ui.theme.JetpackTaskManagementTheme
 import com.example.jetpacktaskmanagement.viewmodel.TagViewModel
 import com.example.jetpacktaskmanagement.viewmodel.TaskDetailViewModel
 import com.example.jetpacktaskmanagement.viewmodel.TaskListViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,33 +39,24 @@ class MainActivity : ComponentActivity() {
             JetpackTaskManagementTheme(
                 darkTheme = darkTheme.value
             ) {
-                val viewModelStoreOwner: ViewModelStoreOwner =
-                    checkNotNull(LocalViewModelStoreOwner.current)
-                val viewModel: TaskListViewModel = viewModel(
-                    factory = TaskListViewModel.provideFactory(),
-                    extras = MutableCreationExtras(
-                        if (viewModelStoreOwner is HasDefaultViewModelProviderFactory) {
-                            viewModelStoreOwner.defaultViewModelCreationExtras
-                        } else {
-                            CreationExtras.Empty
-                        }
-                    )
-                )
-
-                JetpackTaskManagementApp(viewModel)
+                JetpackTaskManagementApp()
             }
         }
     }
 }
 
 @Composable
-fun JetpackTaskManagementApp(viewModel: TaskListViewModel) {
-    // todo : rememberSaveable doesn't survive after system-initiated process death?
-    // why? https://www.revenuecat.com/blog/engineering/remember-vs-remembersaveable/
+fun JetpackTaskManagementApp(
+    viewModel: TaskListViewModel = hiltViewModel()
+) {
     val backStack = rememberSaveable { mutableStateListOf<Any>(TaskList) }
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
+        entryDecorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator()
+        ),
         entryProvider = { key ->
             when (key) {
                 is TaskList -> NavEntry(key) {
@@ -89,9 +79,10 @@ fun JetpackTaskManagementApp(viewModel: TaskListViewModel) {
                 }
 
                 is TaskDetail -> NavEntry(key) {
-                    val viewModel: TaskDetailViewModel = viewModel(
-                        factory = TaskDetailViewModel.provideFactory(key.detailId),
-                        key = key.detailId.toString(),
+                    val viewModel: TaskDetailViewModel = hiltViewModel(
+                        creationCallback = { factory: TaskDetailViewModel.Factory ->
+                            factory.create(key)
+                        }
                     )
                     TaskDetailScreen(viewModel, onBack = {
                         backStack.removeLastOrNull()
@@ -101,14 +92,14 @@ fun JetpackTaskManagementApp(viewModel: TaskListViewModel) {
                 }
 
                 is TagKey -> NavEntry(key) {
-                    val viewModel: TagViewModel = viewModel(
-                        factory = TagViewModel.provideFactory(key.tagId),
-                        key = key.tagId.toString(),
+                    val viewModel: TagViewModel = hiltViewModel(
+                        creationCallback = { factory: TagViewModel.Factory ->
+                            factory.create(key)
+                        }
                     )
                     TagScreen(viewModel, onBack = {
                         backStack.removeLastOrNull()
                     })
-
                 }
 
                 else -> NavEntry(Unit) { }

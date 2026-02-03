@@ -1,11 +1,9 @@
 package com.example.jetpacktaskmanagement.dao
 
 import android.content.ContentValues
-import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.room.AutoMigration
 import androidx.room.Database
-import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -13,9 +11,6 @@ import com.example.jetpacktaskmanagement.entity.Tag
 import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.entity.TaskWithTagCrossRef
 import com.example.jetpacktaskmanagement.entity.User
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -40,22 +35,7 @@ abstract class AppRoom : RoomDatabase() {
     abstract fun tagDao(): TagDao
 
     companion object {
-        @Volatile
-        private var _INSTANCE: AppRoom? = null
-
-        private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-        fun getDatabase(context: Context): AppRoom {
-            return _INSTANCE ?: synchronized(this) {
-                Room.databaseBuilder(
-                    context.applicationContext, AppRoom::class.java, "task_database"
-                )
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_9_10)
-                    .build().also { _INSTANCE = it }
-            }
-        }
-
-        private val MIGRATION_2_3 = object : Migration(2, 3) {
+        val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // 1. Create a temporary table with the new schema
                 db.execSQL(
@@ -100,7 +80,7 @@ abstract class AppRoom : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_3_4 = object : Migration(3, 4) {
+        val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // 1. Create users if they don't already exist (for migrated databases)
                 val userNames = listOf(
@@ -176,7 +156,7 @@ abstract class AppRoom : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_9_10 = object : Migration(9, 10) {
+        val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Migration from version 9 to 10 handles:
                 // Changing task_tag_cross_ref foreign key constraints from CASCADE to NO ACTION

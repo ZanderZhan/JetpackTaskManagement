@@ -4,8 +4,12 @@ import android.util.Log
 import com.example.jetpacktaskmanagement.dao.TagDao
 import com.example.jetpacktaskmanagement.entity.TaskWithTagCrossRef
 import com.example.jetpacktaskmanagement.service.TagService
+import javax.inject.Inject
 
-class TagRepository(private val tagService: TagService, private val tagDao: TagDao) {
+class TagRepository @Inject constructor(
+    private val tagService: TagService,
+    private val tagDao: TagDao,
+) {
 
     companion object {
         private const val TAG = "TagRepository"
