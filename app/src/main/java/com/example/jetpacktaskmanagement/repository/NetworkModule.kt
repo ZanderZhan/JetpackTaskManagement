@@ -1,8 +1,5 @@
 package com.example.jetpacktaskmanagement.repository
 
-import com.example.jetpacktaskmanagement.model.IUiState
-import com.example.jetpacktaskmanagement.model.UIState
-import com.example.jetpacktaskmanagement.model.UiStateViewModel
 import com.example.jetpacktaskmanagement.service.TagService
 import com.example.jetpacktaskmanagement.service.TaskService
 import com.example.jetpacktaskmanagement.service.UserService
@@ -44,10 +41,5 @@ object NetworkModule {
     @Singleton
     fun provideTagService(retrofit: Retrofit): TagService {
         return retrofit.create(TagService::class.java)
-    }
-
-    @Provides
-    fun provideIUiState(): IUiState {
-        return UiStateViewModel(UIState.Loading)
     }
 }
