@@ -1,5 +1,8 @@
-package com.example.jetpacktaskmanagement.model
+package com.example.jetpacktaskmanagement.module
 
+import com.example.jetpacktaskmanagement.model.IUiState
+import com.example.jetpacktaskmanagement.model.UIState
+import com.example.jetpacktaskmanagement.model.UiStateViewModel
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
