@@ -7,6 +7,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.example.jetpacktaskmanagement.ThemeDataStore
 import com.example.jetpacktaskmanagement.dao.TaskDao
 import com.example.jetpacktaskmanagement.entity.Task
@@ -14,9 +18,11 @@ import com.example.jetpacktaskmanagement.entity.UserWithTasks
 import com.example.jetpacktaskmanagement.model.IUiState
 import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.model.UiStateViewModel
+import com.example.jetpacktaskmanagement.repository.TaskPagingSource
 import com.example.jetpacktaskmanagement.repository.TaskRepository
 import com.example.jetpacktaskmanagement.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -74,6 +80,16 @@ class TaskListViewModel @Inject constructor(
         }
     }
 
+
+    val taskPagingData: Flow<PagingData<Task>> = Pager(
+        config = PagingConfig(pageSize = 20),
+        pagingSourceFactory = {
+            TaskPagingSource(repository)
+        }
+    )
+        .flow
+        .cachedIn(viewModelScope)
+
     init {
         uiStateViewModel.addSource(userWithTasks) { userWithTasks ->
             when (userWithTasks) {
@@ -85,11 +101,7 @@ class TaskListViewModel @Inject constructor(
 
     fun addTask(description: String) {
         viewModelScope.launch {
-            val userId = currentUser.value?.id
-            if (userId == null) {
-                // No current user selected; do not create an orphaned task
-                return@launch
-            }
+            val userId = currentUser.value?.id ?: return@launch
 
             val newTask =
                 Task(0, userId, false, description, System.currentTimeMillis())

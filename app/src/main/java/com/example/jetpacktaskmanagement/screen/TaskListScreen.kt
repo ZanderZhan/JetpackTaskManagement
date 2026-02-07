@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,6 +54,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.model.UIState
 import com.example.jetpacktaskmanagement.viewmodel.TaskListViewModel
@@ -73,9 +77,10 @@ fun TaskListScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.observeAsState(UIState.Loading)
-    val userWithTasks by viewModel.userWithTasks.observeAsState()
     var taskToDelete by remember { mutableStateOf<Task?>(null) }
     val searchQuery by viewModel.queryString.observeAsState("")
+
+    val taskPagingData = viewModel.taskPagingData.collectAsLazyPagingItems()
 
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -87,7 +92,7 @@ fun TaskListScreen(
 
     var showUserDialog by remember { mutableStateOf(false) }
     val allUsers by viewModel.allUsers.observeAsState(emptyList())
-    val currentUser = userWithTasks?.user
+    val currentUser by viewModel.currentUser.observeAsState()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -163,13 +168,49 @@ fun TaskListScreen(
                             state = listState,
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(userWithTasks?.tasks ?: emptyList()) { task ->
+                            items(taskPagingData.itemCount) { index ->
+                                val task = taskPagingData[index] ?: return@items
                                 TaskItem(
                                     task = task,
                                     onClick = { onDetail(task.id) },
                                     onToggle = { viewModel.toggleTask(task) },
                                     onDelete = { taskToDelete = task }
                                 )
+                            }
+
+                            // Handle Loading States for Paging
+                            taskPagingData.apply {
+                                when {
+                                    loadState.refresh is LoadState.Loading -> {
+                                        item { FullScreenLoadingSpinner() }
+                                    }
+
+                                    loadState.append is LoadState.Loading -> {
+                                        item { FooterLoadingSpinner() }
+                                    }
+
+                                    loadState.refresh is LoadState.Error -> {
+                                        val e = loadState.refresh as LoadState.Error
+                                        item {
+                                            ErrorMessage(
+                                                message = e.error.localizedMessage
+                                                    ?: "Unknown error",
+                                                retry = { retry() }
+                                            )
+                                        }
+                                    }
+
+                                    loadState.append is LoadState.Error -> {
+                                        val e = loadState.append as LoadState.Error
+                                        item {
+                                            ErrorMessage(
+                                                message = e.error.localizedMessage
+                                                    ?: "Unknown error",
+                                                retry = { retry() }
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -236,6 +277,38 @@ fun TaskListScreen(
                     TextButton(onClick = { showUserDialog = false }) { Text("Close") }
                 }
             )
+        }
+    }
+}
+
+@Composable
+fun FullScreenLoadingSpinner() {
+    Box(modifier = Modifier.fillMaxSize()) {
+        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+    }
+}
+
+@Composable
+fun FooterLoadingSpinner() {
+    Box(modifier = Modifier
+        .fillMaxWidth()
+        .padding(16.dp)) {
+        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+    }
+}
+
+@Composable
+fun ErrorMessage(message: String, retry: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(text = message, color = MaterialTheme.colorScheme.error)
+        Button(onClick = retry, modifier = Modifier.padding(top = 8.dp)) {
+            Text(text = "Retry")
         }
     }
 }

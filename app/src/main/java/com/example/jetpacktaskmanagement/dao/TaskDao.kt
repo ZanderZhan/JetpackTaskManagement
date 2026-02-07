@@ -30,4 +30,7 @@ interface TaskDao {
     @Transaction
     @Query("SELECT * FROM tasks WHERE id = :taskId")
     fun getTaskWithTags(taskId: Int): LiveData<TaskWithTags>
+
+    @Query("SELECT * FROM tasks WHERE id > :taskId ORDER BY id ASC LIMIT :limit")
+    suspend fun getTasksByTaskId(taskId: Int, limit: Int): List<Task>
 }

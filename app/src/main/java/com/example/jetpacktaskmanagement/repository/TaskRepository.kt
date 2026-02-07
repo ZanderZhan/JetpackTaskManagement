@@ -3,6 +3,7 @@ package com.example.jetpacktaskmanagement.repository
 import android.util.Log
 import com.example.jetpacktaskmanagement.dao.TagDao
 import com.example.jetpacktaskmanagement.dao.TaskDao
+import com.example.jetpacktaskmanagement.entity.Task
 import com.example.jetpacktaskmanagement.entity.TaskWithTagCrossRef
 import com.example.jetpacktaskmanagement.service.TaskService
 import javax.inject.Inject
@@ -45,6 +46,16 @@ class TaskRepository @Inject constructor(
             Log.e(TAG, "Error refreshing tasks by tagId: $tagId", e)
             Result.failure(e)
         }
+    }
+
+    suspend fun getTasksByTaskIdAndCount(taskId: Int, count: Int): List<Task> {
+        return taskDao.getTasksByTaskId(taskId, count)
+    }
+
+    suspend fun loadTasksFromNetwork(taskId: Int, count: Int): List<Task> {
+        val tasks = service.getTasksByIdAndCount(taskId, count)
+//        taskDao.saveTasks(tasks)
+        return tasks
     }
 
 }
